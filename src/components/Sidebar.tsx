@@ -8,9 +8,10 @@ import { Session } from '@/lib/ui-types';
 interface SidebarProps {
   sessions: Session[];
   activeSessionId: string;
+  onSessionSelect?: (sessionId: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId }) => {
+const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId, onSessionSelect }) => {
   return (
     <aside className="w-80 flex flex-col glass-sidebar">
       <div className="p-6">
@@ -32,6 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId }) => {
           return (
             <div
               key={session.id}
+              onClick={() => onSessionSelect?.(session.id)}
               className={`group flex cursor-pointer gap-4 p-4 rounded-3xl transition-all ${
                 isActive
                   ? 'bg-primary/5 border border-primary/20 shadow-neon-cyan'
@@ -57,9 +59,17 @@ const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId }) => {
                     <span className="flex size-1.5 rounded-full bg-primary shadow-[0_0_8px_#00ebd3]"></span>
                   )}
                 </div>
-                <p className={`text-[11px] uppercase tracking-wider font-medium ${isActive ? 'text-slate-400 opacity-60 font-bold' : 'text-slate-500'}`}>
-                  {session.dateStr} • {session.duration}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className={`text-[11px] uppercase tracking-wider font-medium ${isActive ? 'text-slate-400 opacity-60 font-bold' : 'text-slate-500'}`}>
+                    {session.dateStr}
+                    {session.duration && ` • ${session.duration}`}
+                  </p>
+                  {session.eventCount !== undefined && (
+                    <span className="text-[10px] text-slate-600 bg-white/5 px-1.5 py-0.5 rounded">
+                      {session.eventCount} events
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );

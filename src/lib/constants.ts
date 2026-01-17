@@ -1,5 +1,135 @@
-import { Session, LogEntry } from './ui-types';
+import { Session, LogEntry, EventCategory } from './ui-types';
 
+// ==================== EVENT CATEGORY STYLING ====================
+export interface EventCategoryStyle {
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  icon: string;
+  label: string;
+}
+
+export const EVENT_CATEGORY_STYLES: Record<EventCategory, EventCategoryStyle> = {
+  session: {
+    color: 'text-slate-400',
+    bgColor: 'bg-slate-500/10',
+    borderColor: 'border-slate-500/30',
+    icon: 'Settings',
+    label: 'Session',
+  },
+  user_input: {
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/30',
+    icon: 'User',
+    label: 'User',
+  },
+  response: {
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/10',
+    borderColor: 'border-cyan-500/30',
+    icon: 'Bot',
+    label: 'Response',
+  },
+  function_call: {
+    color: 'text-orange-400',
+    bgColor: 'bg-orange-500/10',
+    borderColor: 'border-orange-500/30',
+    icon: 'Wrench',
+    label: 'Function',
+  },
+  audio: {
+    color: 'text-green-400',
+    bgColor: 'bg-green-500/10',
+    borderColor: 'border-green-500/30',
+    icon: 'Mic',
+    label: 'Audio',
+  },
+  transcript: {
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10',
+    borderColor: 'border-blue-500/30',
+    icon: 'FileText',
+    label: 'Transcript',
+  },
+  error: {
+    color: 'text-red-400',
+    bgColor: 'bg-red-500/10',
+    borderColor: 'border-red-500/30',
+    icon: 'AlertTriangle',
+    label: 'Error',
+  },
+  system: {
+    color: 'text-gray-400',
+    bgColor: 'bg-gray-500/10',
+    borderColor: 'border-gray-500/30',
+    icon: 'Activity',
+    label: 'System',
+  },
+  unknown: {
+    color: 'text-gray-500',
+    bgColor: 'bg-gray-500/5',
+    borderColor: 'border-gray-500/20',
+    icon: 'HelpCircle',
+    label: 'Unknown',
+  },
+};
+
+// ==================== EVENT TYPE DISPLAY NAMES ====================
+export const EVENT_DISPLAY_NAMES: Record<string, string> = {
+  // Session
+  'session.created': 'Session Created',
+  'session.updated': 'Session Updated',
+  'session_update': 'Session Update',
+
+  // User input
+  'conversation_input_text': 'Text Input',
+  'audio_append': 'Audio Chunk',
+  'audio_commit': 'Audio Committed',
+  'audio_clear': 'Audio Cleared',
+
+  // Response lifecycle
+  'response.created': 'Response Started',
+  'response.done': 'Response Complete',
+  'response.output_item.added': 'Output Added',
+  'response.output_item.done': 'Output Complete',
+
+  // Function calls
+  'response.function_call_arguments.delta': 'Function Args (streaming)',
+  'response.function_call_arguments.done': 'Function Call Complete',
+
+  // Audio
+  'response.audio.delta': 'Audio Chunk',
+  'response.audio.done': 'Audio Complete',
+  'response.audio_transcript.delta': 'Transcript (streaming)',
+  'response.audio_transcript.done': 'Transcript Complete',
+
+  // Text
+  'response.text.delta': 'Text (streaming)',
+  'response.text.done': 'Text Complete',
+
+  // Conversation
+  'conversation.created': 'Conversation Created',
+  'conversation.item.created': 'Item Created',
+
+  // Input buffer
+  'input_audio_buffer.speech_started': 'Speech Started',
+  'input_audio_buffer.speech_stopped': 'Speech Stopped',
+
+  // Errors
+  'error': 'Error',
+  'permission.denied': 'Permission Denied',
+};
+
+// ==================== STREAMABLE EVENTS ====================
+export const STREAMABLE_EVENTS = [
+  'response.function_call_arguments.delta',
+  'response.audio_transcript.delta',
+  'response.audio.delta',
+  'response.text.delta',
+];
+
+// ==================== DEMO/MOCK DATA (for fallback) ====================
 export const SESSIONS: Session[] = [
   { id: 'sess_9429...a1b', name: 'sess_9429...a1b', status: 'active', dateStr: 'Active', duration: '2m 30s' },
   { id: 'sess_8102...c4x', name: 'sess_8102...c4x', status: 'completed', dateStr: 'Yesterday', duration: '14m 12s' },
