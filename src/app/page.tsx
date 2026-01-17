@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import MainLog from '@/components/MainLog';
 import Inspector from '@/components/Inspector';
-import { SESSIONS } from '@/lib/constants';
+import LogLoader from '@/components/LogLoader';
 import {
   ConversationItem,
   ParsedEvent,
@@ -26,8 +26,12 @@ interface LogApiResponse {
 }
 
 export default function Home() {
+  // App state
+  const [isLogLoaded, setIsLogLoaded] = useState(false);
+  const [loadedFileName, setLoadedFileName] = useState<string | null>(null);
+
   // Session state
-  const [sessions, setSessions] = useState<Session[]>(SESSIONS);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   // Log data state
@@ -38,66 +42,81 @@ export default function Home() {
   // UI state
   const [selectedEvent, setSelectedEvent] = useState<ParsedEvent | null>(null);
   const [selectedConversationItem, setSelectedConversationItem] = useState<ConversationItem | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load log file
-  const loadLogFile = useCallback(async (fileName: string, sessionId?: string) => {
+  // Process API response
+  const processApiResponse = useCallback((data: LogApiResponse, fileName?: string) => {
+    // Update sessions from log file
+    if (data.sessions && data.sessions.length > 0) {
+      const logSessions: Session[] = data.sessions.map((id, index) => ({
+        id,
+        name: id.length > 20 ? `${id.substring(0, 8)}...${id.substring(id.length - 4)}` : id,
+        status: index === 0 ? 'active' : 'completed',
+        dateStr: index === 0 ? 'Current' : 'Previous',
+        eventCount: data.rawEvents?.filter(e => e.sessionId === id).length,
+      }));
+      setSessions(logSessions);
+
+      if (data.currentSession) {
+        setActiveSessionId(data.currentSession);
+      }
+    }
+
+    // Update conversation data
+    setConversationItems(data.conversationItems || []);
+    setRawEvents(data.rawEvents || []);
+    setSessionData(data.sessionData || null);
+    setLoadedFileName(fileName || data.fileName || null);
+    setIsLogLoaded(true);
+  }, []);
+
+  // Load logs from content (pasted or file)
+  const handleLogLoaded = useCallback(async (content: string, fileName?: string) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const params = new URLSearchParams({ file: fileName });
-      if (sessionId) {
-        params.append('session', sessionId);
-      }
+      const response = await fetch('/api/logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
 
-      const response = await fetch(`/api/logs?${params}`);
       const data: LogApiResponse = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to load logs');
+        throw new Error(data.error || 'Failed to parse logs');
       }
 
-      // Update sessions from log file
-      if (data.sessions && data.sessions.length > 0) {
-        const logSessions: Session[] = data.sessions.map((id, index) => ({
-          id,
-          name: id.length > 20 ? `${id.substring(0, 8)}...${id.substring(id.length - 4)}` : id,
-          status: index === 0 ? 'active' : 'completed',
-          dateStr: index === 0 ? 'Current' : 'Previous',
-          eventCount: data.rawEvents?.filter(e => e.sessionId === id).length,
-        }));
-        setSessions(logSessions);
-
-        if (!activeSessionId && data.currentSession) {
-          setActiveSessionId(data.currentSession);
-        }
-      }
-
-      // Update conversation data
-      setConversationItems(data.conversationItems || []);
-      setRawEvents(data.rawEvents || []);
-      setSessionData(data.sessionData || null);
-
+      processApiResponse(data, fileName);
     } catch (err) {
       console.error('Error loading logs:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
-  }, [activeSessionId]);
-
-  // Load default log file on mount
-  useEffect(() => {
-    loadLogFile('realtime_payloads.log');
-  }, [loadLogFile]);
+  }, [processApiResponse]);
 
   // Handle session change
-  const handleSessionChange = (sessionId: string) => {
+  const handleSessionChange = useCallback(async (sessionId: string) => {
+    if (!rawEvents.length) return;
+
     setActiveSessionId(sessionId);
-    loadLogFile('realtime_payloads.log', sessionId);
-  };
+    setIsLoading(true);
+
+    // Re-filter the current data for the selected session
+    const filteredEvents = rawEvents.filter(e => e.sessionId === sessionId);
+
+    // We need to rebuild conversation items for this session
+    // For now, just filter existing items
+    const filteredItems = conversationItems.filter(item =>
+      item.events.some(e => e.sessionId === sessionId)
+    );
+
+    setConversationItems(filteredItems);
+    setIsLoading(false);
+  }, [rawEvents, conversationItems]);
 
   // Handle event selection (for Inspector)
   const handleEventSelect = (event: ParsedEvent, conversationItem?: ConversationItem) => {
@@ -120,12 +139,37 @@ export default function Home() {
     return rawEvents.filter(e => e.responseId === selectedEvent.responseId);
   };
 
+  // Reset to log loader
+  const handleReset = () => {
+    setIsLogLoaded(false);
+    setLoadedFileName(null);
+    setSessions([]);
+    setActiveSessionId(null);
+    setConversationItems([]);
+    setRawEvents([]);
+    setSessionData(null);
+    setSelectedEvent(null);
+    setSelectedConversationItem(null);
+    setError(null);
+  };
+
+  // Show log loader if no logs loaded
+  if (!isLogLoaded) {
+    return (
+      <LogLoader
+        onLogLoaded={handleLogLoaded}
+        isLoading={isLoading}
+        error={error}
+      />
+    );
+  }
+
   return (
     <div className="h-full flex flex-col overflow-hidden text-slate-300 font-sans">
       {/* Background Depth Effect */}
       <div className="fixed inset-0 bg-depth-overlay pointer-events-none z-0"></div>
 
-      <Header />
+      <Header fileName={loadedFileName} onReset={handleReset} />
 
       <div className="flex flex-1 overflow-hidden z-20">
         <Sidebar

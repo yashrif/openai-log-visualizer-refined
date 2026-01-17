@@ -13,6 +13,68 @@ import {
 // Default log file location (in project root)
 const LOG_DIR = process.cwd();
 
+// Helper function to process log content
+function processLogContent(content: string, sessionId?: string | null) {
+  // Parse log file
+  let rawLines = parseLogFile(content);
+
+  // Get unique sessions
+  const sessions = getUniqueSessions(rawLines);
+
+  // Filter by session if specified
+  if (sessionId) {
+    rawLines = filterBySession(rawLines, sessionId);
+  }
+
+  // Build conversation items
+  const conversationItems = buildConversationItems(rawLines);
+
+  // Extract session data
+  const parsedEvents = rawLines.map(toParsedEvent);
+  const sessionData = extractSessionData(parsedEvents);
+
+  return {
+    sessions,
+    currentSession: sessionId || sessions[0] || null,
+    sessionData,
+    conversationItems,
+    rawEvents: parsedEvents,
+    totalEvents: rawLines.length,
+  };
+}
+
+// POST handler for pasted content
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { content, sessionId } = body;
+
+    if (!content || typeof content !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'Content is required' },
+        { status: 400 }
+      );
+    }
+
+    const result = processLogContent(content, sessionId);
+
+    return NextResponse.json({
+      success: true,
+      fileName: 'pasted-content',
+      ...result,
+    });
+  } catch (error) {
+    console.error('Error processing pasted content:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const fileName = searchParams.get('file');
@@ -54,34 +116,13 @@ export async function GET(request: NextRequest) {
     // Read file content
     const content = await fs.readFile(filePath, 'utf-8');
 
-    // Parse log file
-    let rawLines = parseLogFile(content);
-
-    // Get unique sessions
-    const sessions = getUniqueSessions(rawLines);
-
-    // Filter by session if specified
-    if (sessionId) {
-      rawLines = filterBySession(rawLines, sessionId);
-    }
-
-    // Build conversation items
-    const conversationItems = buildConversationItems(rawLines);
-
-    // Extract session data
-    const parsedEvents = rawLines.map(toParsedEvent);
-    const sessionData = extractSessionData(parsedEvents);
+    // Process the content
+    const result = processLogContent(content, sessionId);
 
     return NextResponse.json({
       success: true,
       fileName,
-      totalEvents: rawLines.length,
-      sessions,
-      currentSession: sessionId || sessions[0] || null,
-      sessionData,
-      conversationItems,
-      // Also include raw events for Inspector
-      rawEvents: parsedEvents,
+      ...result,
     });
   } catch (error) {
     console.error('Error processing log file:', error);

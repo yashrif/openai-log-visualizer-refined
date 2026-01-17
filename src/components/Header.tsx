@@ -1,9 +1,15 @@
 "use client";
 
 import React from 'react';
-import { AudioLines, Wifi, Clock, Settings, User } from 'lucide-react';
+import { AudioLines, Wifi, Clock, Settings, User, FileText, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  fileName?: string | null;
+  onReset?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ fileName, onReset }) => {
   return (
     <header className="h-16 flex items-center justify-between px-8 border-b border-white/5 bg-bg-deep/80 backdrop-blur-xl z-30 shrink-0">
       <div className="flex items-center gap-5">
@@ -17,9 +23,30 @@ const Header: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Current file indicator */}
+        {fileName && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
+            <FileText className="size-4 text-cyan-400" />
+            <span className="text-sm text-slate-300 font-mono max-w-[200px] truncate">{fileName}</span>
+            {onReset && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onReset}
+                className="h-6 w-6 p-0 ml-1 hover:bg-red-500/20 hover:text-red-400"
+                title="Load different file"
+              >
+                <X className="size-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
+
+        <div className="h-6 w-px bg-white/5 mx-1"></div>
+
         <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10">
           <div className="size-2 rounded-full bg-primary shadow-[0_0_12px_#00ebd3]"></div>
-          <span className="text-primary text-[10px] font-bold uppercase tracking-widest">Connected</span>
+          <span className="text-primary text-[10px] font-bold uppercase tracking-widest">Loaded</span>
         </div>
 
         <div className="h-6 w-px bg-white/5 mx-1"></div>
