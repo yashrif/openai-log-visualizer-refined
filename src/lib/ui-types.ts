@@ -143,6 +143,8 @@ export interface ResponseGroup {
   functionArguments?: Record<string, unknown>;
   transcript?: string;
   textContent?: string;
+  audioData?: string; // Aggregated base64 audio data
+  audioChunkCount?: number; // Number of audio delta events
   usage?: TokenUsage;
 }
 
@@ -179,6 +181,7 @@ export interface ConversationItem {
     voice?: string;
     instructions?: string;
     tools?: Array<{ name: string; description?: string }>;
+    modalities?: string[];
     eventType: 'created' | 'updated';
   };
   // For user input
@@ -186,6 +189,7 @@ export interface ConversationItem {
     inputType: 'text' | 'audio';
     text?: string;
     hasAudio?: boolean;
+    audioData?: string; // Base64 audio data
   };
   // For response groups
   responseGroup?: ResponseGroup;

@@ -28,6 +28,7 @@ import { formatTimestamp, formatDuration } from '@/lib/log-parser';
 import { EVENT_DISPLAY_NAMES, STREAMABLE_EVENTS } from '@/lib/constants';
 import Waveform from '@/components/ui/Waveform';
 import JsonViewer from '@/components/ui/JsonViewer';
+import AudioPlayer from '@/components/ui/AudioPlayer';
 
 interface MainLogProps {
   conversationItems: ConversationItem[];
@@ -52,32 +53,102 @@ const SessionEvent: React.FC<{
 
   return (
     <div
-      className={`flex flex-col items-center gap-3 cursor-pointer transition-all ${
-        isSelected ? 'opacity-100' : 'opacity-60 hover:opacity-100'
+      className={`flex justify-center my-8 cursor-pointer transition-all ${
+        isSelected ? 'ring-2 ring-cyan-500/30 rounded-3xl' : ''
       }`}
       onClick={onClick}
     >
-      <div className="h-px w-64 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-      <div className="flex items-center gap-3">
-        <Settings className="size-4 text-slate-500" />
-        <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-          {isCreated ? 'Session Created' : 'Session Updated'}
-        </span>
-        <span className="text-[10px] font-mono text-slate-600">
-          {formatTimestamp(item.timestamp)}
-        </span>
-      </div>
-      {sessionData.model && (
-        <div className="flex items-center gap-4 text-[10px] text-slate-600">
-          <span>Model: <span className="text-slate-400">{sessionData.model}</span></span>
-          {sessionData.voice && (
-            <span>Voice: <span className="text-slate-400">{sessionData.voice}</span></span>
-          )}
-          {sessionData.tools && sessionData.tools.length > 0 && (
-            <span>Tools: <span className="text-slate-400">{sessionData.tools.length}</span></span>
+      <div className="ethereal-card rounded-[28px] p-0 max-w-3xl w-full border-l-[6px] border-l-cyan-500/50 overflow-hidden shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 bg-cyan-500/5 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-cyan-500/20">
+              <Settings className="size-5 text-cyan-400" />
+            </div>
+            <div>
+              <span className="text-sm font-bold text-cyan-400 uppercase tracking-wider">
+                {isCreated ? 'Session Created' : 'Session Updated'}
+              </span>
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                {formatTimestamp(item.timestamp)}
+              </p>
+            </div>
+          </div>
+          {sessionData.model && (
+            <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10">
+              <span className="text-xs font-mono text-slate-300">{sessionData.model}</span>
+            </div>
           )}
         </div>
-      )}
+
+        {/* Content */}
+        <div className="p-6 space-y-4">
+          {/* Key Settings Row */}
+          <div className="grid grid-cols-3 gap-4">
+            {sessionData.voice && (
+              <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Voice</span>
+                <span className="text-sm text-white font-medium flex items-center gap-2">
+                  <Mic className="size-4 text-green-400" />
+                  {sessionData.voice}
+                </span>
+              </div>
+            )}
+            {sessionData.tools && sessionData.tools.length > 0 && (
+              <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Tools</span>
+                <span className="text-sm text-white font-medium flex items-center gap-2">
+                  <Wrench className="size-4 text-orange-400" />
+                  {sessionData.tools.length} available
+                </span>
+              </div>
+            )}
+            {sessionData.modalities && (
+              <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Modalities</span>
+                <span className="text-sm text-white font-medium">
+                  {sessionData.modalities.join(', ')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Tools List */}
+          {sessionData.tools && sessionData.tools.length > 0 && (
+            <div className="space-y-2">
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider">Available Tools</span>
+              <div className="flex flex-wrap gap-2">
+                {sessionData.tools.map((tool, index) => (
+                  <div
+                    key={index}
+                    className="px-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-xs"
+                  >
+                    <span className="text-orange-400 font-medium">{tool.name}</span>
+                    {tool.description && (
+                      <span className="text-slate-500 ml-2">- {tool.description.substring(0, 50)}...</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Instructions Preview */}
+          {sessionData.instructions && (
+            <div className="space-y-2">
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider">Instructions</span>
+              <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-700/50 max-h-32 overflow-hidden relative">
+                <p className="text-xs text-slate-400 leading-relaxed line-clamp-4">
+                  {sessionData.instructions.substring(0, 300)}
+                  {sessionData.instructions.length > 300 && '...'}
+                </p>
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900/90 to-transparent"></div>
+              </div>
+              <p className="text-[10px] text-cyan-400">Click to view full instructions in Inspector</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -223,12 +294,25 @@ const ResponseGroupEvent: React.FC<{
           {/* Audio Response Content */}
           {hasAudio && (
             <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <button className="size-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
-                  <Play className="size-5" />
-                </button>
-                <Waveform color="green" size="md" />
-              </div>
+              {/* Audio Player */}
+              {responseGroup.audioData ? (
+                <AudioPlayer
+                  audioData={responseGroup.audioData}
+                  chunkCount={responseGroup.audioChunkCount}
+                />
+              ) : (
+                <div className="flex items-center gap-4">
+                  <button className="size-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center shadow-lg hover:scale-105 transition-transform opacity-50 cursor-not-allowed" disabled>
+                    <Play className="size-5" />
+                  </button>
+                  <Waveform color="green" size="md" />
+                  {responseGroup.audioChunkCount && responseGroup.audioChunkCount > 0 && (
+                    <span className="text-[10px] text-slate-500">
+                      {responseGroup.audioChunkCount} audio chunks (data not captured)
+                    </span>
+                  )}
+                </div>
+              )}
               {responseGroup.transcript && (
                 <div className="mt-4 pt-4 border-t border-white/5">
                   <span className="text-[10px] text-slate-500 uppercase tracking-widest block mb-2">

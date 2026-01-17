@@ -243,6 +243,39 @@ export function aggregateTextDeltas(events: ParsedEvent[]): string {
   return deltas.join('');
 }
 
+// ==================== AGGREGATE AUDIO DELTAS ====================
+export function aggregateAudioDeltas(events: ParsedEvent[]): {
+  audioData?: string;
+  chunkCount: number;
+} {
+  const audioChunks: string[] = [];
+  let chunkCount = 0;
+
+  for (const event of events) {
+    if (event.eventType === 'response.audio.delta') {
+      chunkCount++;
+      const delta = event.payload.delta as string;
+      if (delta) {
+        audioChunks.push(delta);
+      }
+    }
+    if (event.eventType === 'response.audio.done') {
+      // If done event has full audio, prefer that
+      const audio = event.payload.audio as string;
+      if (audio) {
+        return { audioData: audio, chunkCount };
+      }
+    }
+  }
+
+  // Concatenate audio chunks
+  if (audioChunks.length > 0) {
+    return { audioData: audioChunks.join(''), chunkCount };
+  }
+
+  return { chunkCount };
+}
+
 // ==================== EXTRACT TOKEN USAGE ====================
 export function extractTokenUsage(events: ParsedEvent[]): TokenUsage | undefined {
   for (const event of events) {
@@ -305,6 +338,7 @@ export function createResponseGroup(responseId: string, events: ParsedEvent[]): 
   const functionData = hasFunctionCall ? aggregateFunctionCallDeltas(sortedEvents) : undefined;
   const transcript = hasAudio ? aggregateAudioTranscriptDeltas(sortedEvents) : undefined;
   const textContent = hasText ? aggregateTextDeltas(sortedEvents) : undefined;
+  const audioResult = hasAudio ? aggregateAudioDeltas(sortedEvents) : undefined;
   const usage = extractTokenUsage(sortedEvents);
 
   return {
@@ -318,6 +352,8 @@ export function createResponseGroup(responseId: string, events: ParsedEvent[]): 
     functionArguments: functionData?.arguments,
     transcript,
     textContent,
+    audioData: audioResult?.audioData,
+    audioChunkCount: audioResult?.chunkCount,
     usage,
   };
 }
@@ -401,6 +437,7 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
             name: t.name as string,
             description: t.description as string,
           })),
+          modalities: session?.modalities as string[],
           eventType: event.eventType === 'session.created' ? 'created' : 'updated',
         },
         events: [event],
