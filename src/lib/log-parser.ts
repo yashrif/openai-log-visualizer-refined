@@ -243,6 +243,25 @@ export function aggregateTextDeltas(events: ParsedEvent[]): string {
   return deltas.join('');
 }
 
+// ==================== HELPER: MERGE BASE64 CHUNKS ====================
+// Helper function to properly merge base64 audio chunks
+// When multiple base64 chunks are concatenated, padding (=) from intermediate
+// chunks must be removed, and proper padding added only at the end
+function mergeBase64Chunks(chunks: string[]): string {
+  if (chunks.length === 0) return '';
+  if (chunks.length === 1) return chunks[0];
+
+  // Remove padding from all chunks except potentially needed at the end
+  const strippedChunks = chunks.map(chunk => chunk.replace(/=+$/, ''));
+
+  // Join all chunks
+  const joined = strippedChunks.join('');
+
+  // Add proper padding (base64 must be divisible by 4)
+  const paddingNeeded = (4 - (joined.length % 4)) % 4;
+  return joined + '='.repeat(paddingNeeded);
+}
+
 // ==================== AGGREGATE AUDIO DELTAS ====================
 export function aggregateAudioDeltas(events: ParsedEvent[]): {
   audioData?: string;
@@ -268,9 +287,9 @@ export function aggregateAudioDeltas(events: ParsedEvent[]): {
     }
   }
 
-  // Concatenate audio chunks
+  // Concatenate audio chunks using proper base64 merging
   if (audioChunks.length > 0) {
-    return { audioData: audioChunks.join(''), chunkCount };
+    return { audioData: mergeBase64Chunks(audioChunks), chunkCount };
   }
 
   return { chunkCount };
@@ -391,6 +410,36 @@ export function extractSessionData(events: ParsedEvent[]): SessionData | undefin
   };
 }
 
+// ==================== AGGREGATE USER AUDIO EVENTS ====================
+export function aggregateUserAudioEvents(events: ParsedEvent[]): {
+  audioData?: string;
+  eventIds: string[];
+  startTimestamp: string;
+} {
+  const audioChunks: string[] = [];
+  const eventIds: string[] = [];
+  let startTimestamp = '';
+
+  for (const event of events) {
+    if (event.eventType === 'audio_append') {
+      eventIds.push(event.id);
+      if (!startTimestamp) startTimestamp = event.timestamp;
+
+      const payload = event.payload.payload as Record<string, unknown> | undefined;
+      const audioData = (payload?.audio || event.payload.audio) as string | undefined;
+      if (audioData) {
+        audioChunks.push(audioData);
+      }
+    }
+  }
+
+  return {
+    audioData: audioChunks.length > 0 ? mergeBase64Chunks(audioChunks) : undefined,
+    eventIds,
+    startTimestamp,
+  };
+}
+
 // ==================== BUILD CONVERSATION ITEMS ====================
 export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem[] {
   const parsedEvents = rawLines.map(toParsedEvent);
@@ -416,7 +465,45 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
     });
   }
 
-  // Second pass: Process remaining events
+  // Second pass: Group consecutive audio_append events
+  const audioAppendGroups: ParsedEvent[][] = [];
+  let currentAudioGroup: ParsedEvent[] = [];
+
+  for (const event of parsedEvents) {
+    if (processedEventIds.has(event.id)) continue;
+
+    if (event.eventType === 'audio_append') {
+      currentAudioGroup.push(event);
+    } else {
+      if (currentAudioGroup.length > 0) {
+        audioAppendGroups.push(currentAudioGroup);
+        currentAudioGroup = [];
+      }
+    }
+  }
+  if (currentAudioGroup.length > 0) {
+    audioAppendGroups.push(currentAudioGroup);
+  }
+
+  // Create user audio items from groups
+  for (const audioGroup of audioAppendGroups) {
+    const aggregated = aggregateUserAudioEvents(audioGroup);
+    audioGroup.forEach(e => processedEventIds.add(e.id));
+
+    items.push({
+      id: `user_audio_${audioGroup[0].id}`,
+      type: 'user_input',
+      timestamp: aggregated.startTimestamp,
+      userInput: {
+        inputType: 'audio',
+        hasAudio: true,
+        audioData: aggregated.audioData,
+      },
+      events: audioGroup,
+    });
+  }
+
+  // Third pass: Process remaining events
   for (const event of parsedEvents) {
     if (processedEventIds.has(event.id)) continue;
 
@@ -459,15 +546,15 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
           },
           events: [event],
         });
-      } else if (event.eventType === 'audio_append' || event.eventType === 'audio_commit') {
-        // Find or create audio input group
+      } else if (event.eventType === 'audio_commit') {
+        // audio_append events are pre-grouped, audio_commit is a separate signal
         items.push({
-          id: `user_${event.id}`,
-          type: 'user_input',
+          id: `system_${event.id}`,
+          type: 'system_event',
           timestamp: event.timestamp,
-          userInput: {
-            inputType: 'audio',
-            hasAudio: true,
+          systemEvent: {
+            eventType: event.eventType,
+            description: 'Audio input committed',
           },
           events: [event],
         });

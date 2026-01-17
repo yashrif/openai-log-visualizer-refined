@@ -169,7 +169,7 @@ const UserInputEvent: React.FC<{
       }`}
       onClick={onClick}
     >
-      <div className="flex flex-col items-end max-w-xl">
+      <div className="flex flex-col items-end max-w-xl min-w-[320px]">
         <div className="flex items-center gap-3 mb-2 opacity-60">
           <span className="text-[10px] font-mono text-slate-400">
             {formatTimestamp(item.timestamp)}
@@ -178,13 +178,23 @@ const UserInputEvent: React.FC<{
             User Input
           </span>
         </div>
-        <div className="p-6 rounded-[32px] rounded-tr-none bg-secondary/10 border border-secondary/20 text-white shadow-neon-purple ethereal-card">
+        <div className="p-6 rounded-[32px] rounded-tr-none bg-secondary/10 border border-secondary/20 text-white shadow-neon-purple ethereal-card w-full">
           {userInput.inputType === 'audio' && (
-            <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/5">
-              <button className="size-8 rounded-full bg-secondary text-white flex items-center justify-center shadow-lg shadow-secondary/20 hover:scale-105 transition-transform">
-                <Play className="size-5" />
-              </button>
-              <Waveform color="secondary" size="sm" />
+            <div className="mb-4 pb-4 border-b border-white/5">
+              {userInput.audioData ? (
+                <AudioPlayer
+                  audioData={userInput.audioData}
+                  className="bg-secondary/10 border-secondary/20"
+                />
+              ) : (
+                <div className="flex items-center gap-4">
+                  <button className="size-8 rounded-full bg-secondary/50 text-white/50 flex items-center justify-center cursor-not-allowed" disabled>
+                    <Play className="size-5" />
+                  </button>
+                  <Waveform color="secondary" size="sm" />
+                  <span className="text-[10px] text-slate-500">Audio data not captured</span>
+                </div>
+              )}
             </div>
           )}
           {userInput.text ? (
@@ -475,10 +485,10 @@ const SystemEvent: React.FC<{
     >
       <div className="flex items-center gap-2">
         <Activity className="size-3 text-slate-600" />
-        <span className="text-[10px] font-mono text-slate-600">
+        <span className="text-[12px] font-mono text-slate-600">
           {systemEvent.description}
         </span>
-        <span className="text-[10px] font-mono text-slate-700">
+        <span className="text-[12px] font-mono text-slate-700">
           {formatTimestamp(item.timestamp)}
         </span>
       </div>

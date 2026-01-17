@@ -26,8 +26,24 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
   // Convert base64 PCM16 to AudioBuffer
   const decodeAudioData = useCallback(async (base64Data: string): Promise<AudioBuffer | null> => {
     try {
+      // Remove data URL prefix if present (e.g., "data:audio/pcm;base64,")
+      let cleanBase64 = base64Data;
+      if (base64Data.includes(',')) {
+        cleanBase64 = base64Data.split(',').pop() || base64Data;
+      }
+      
+      // Remove any whitespace or newlines that might be in the base64 string
+      cleanBase64 = cleanBase64.replace(/\s/g, '');
+      
+      // Handle URL-safe base64 (convert - to + and _ to /)
+      cleanBase64 = cleanBase64.replace(/-/g, '+').replace(/_/g, '/');
+      
+      // Add padding if missing (base64 strings should be divisible by 4)
+      const paddingNeeded = (4 - (cleanBase64.length % 4)) % 4;
+      cleanBase64 += '='.repeat(paddingNeeded);
+      
       // Decode base64 to binary
-      const binaryString = atob(base64Data);
+      const binaryString = atob(cleanBase64);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
