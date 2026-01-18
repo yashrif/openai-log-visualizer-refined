@@ -66,12 +66,12 @@ const Inspector: React.FC<InspectorProps> = ({
   // Empty state
   if (!selectedEvent) {
     return (
-      <aside className="w-full h-full flex flex-col">
-        <div className="flex border-b border-white/5 bg-white/5 p-1 mx-6 mt-6 rounded-2xl">
+      <aside className="w-full h-full flex flex-col glass-inspector">
+        <div className="flex border-b border-border bg-muted/50 p-1 mx-6 mt-6 rounded-2xl">
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              className="flex-1 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 transition-all"
+              className="flex-1 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-all"
               disabled
             >
               {tab.label}
@@ -79,19 +79,19 @@ const Inspector: React.FC<InspectorProps> = ({
           ))}
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-slate-600">
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground">
           <Activity className="size-12 opacity-30" />
           <p className="text-sm">Select an event to inspect</p>
-          <p className="text-xs text-slate-700">Click on any event in the main log</p>
+          <p className="text-xs text-muted-foreground/80">Click on any event in the main log</p>
         </div>
       </aside>
     );
   }
 
   return (
-    <aside className="w-full h-full flex flex-col">
+    <aside className="w-full h-full flex flex-col glass-inspector">
       {/* Tabs */}
-      <div className="flex border-b border-white/5 bg-white/5 p-1 mx-6 mt-6 rounded-2xl">
+      <div className="flex border-b border-border bg-muted/50 p-1 mx-6 mt-6 rounded-2xl">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -99,7 +99,7 @@ const Inspector: React.FC<InspectorProps> = ({
             className={`flex-1 px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${
               activeTab === tab.id
                 ? 'text-primary bg-primary/10 rounded-xl shadow-glow-sm'
-                : 'text-slate-500 hover:text-slate-300'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab.label}
@@ -115,7 +115,7 @@ const Inspector: React.FC<InspectorProps> = ({
             eventType={EVENT_DISPLAY_NAMES[selectedEvent.eventType] || selectedEvent.eventType}
             size="md"
           />
-          <span className="text-[10px] font-mono text-slate-500">
+          <span className="text-[10px] font-mono text-muted-foreground">
             {formatTimestamp(selectedEvent.timestamp)}
           </span>
         </div>
@@ -124,12 +124,12 @@ const Inspector: React.FC<InspectorProps> = ({
         {activeTab === 'payload' && (
           <div className="space-y-6">
             {/* Event Info */}
-            <div className="p-5 rounded-[20px] border border-white/5 bg-white/5 space-y-4">
-              <h3 className="text-slate-500 uppercase text-[10px] tracking-widest font-sans font-bold">
+            <div className="p-5 rounded-[20px] border border-border bg-muted/30 space-y-4">
+              <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
                 Event Info
               </h3>
               <div className="grid grid-cols-2 gap-y-3 text-xs">
-                <div className="text-slate-500 flex items-center gap-2">
+                <div className="text-muted-foreground flex items-center gap-2">
                   <Tag className="size-3" />
                   Source
                 </div>
@@ -139,19 +139,19 @@ const Inspector: React.FC<InspectorProps> = ({
                   {selectedEvent.source}
                 </div>
 
-                <div className="text-slate-500 flex items-center gap-2">
+                <div className="text-muted-foreground flex items-center gap-2">
                   <Layers className="size-3" />
                   Event Type
                 </div>
-                <div className="text-slate-300 text-right font-mono text-[10px] break-all">
+                <div className="text-foreground text-right font-mono text-[10px] break-all">
                   {selectedEvent.eventType}
                 </div>
 
-                <div className="text-slate-500 flex items-center gap-2">
+                <div className="text-muted-foreground flex items-center gap-2">
                   <Clock className="size-3" />
                   Timestamp
                 </div>
-                <div className="text-slate-300 text-right font-mono text-[10px]">
+                <div className="text-foreground text-right font-mono text-[10px]">
                   {formatTimestamp(selectedEvent.timestamp)}
                 </div>
               </div>
@@ -160,7 +160,7 @@ const Inspector: React.FC<InspectorProps> = ({
             {/* Payload Content */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-slate-500 uppercase text-[10px] tracking-widest font-sans font-bold">
+                <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
                   Payload
                 </h3>
                 <button
@@ -180,11 +180,11 @@ const Inspector: React.FC<InspectorProps> = ({
 
             {/* Delta Content (if present) */}
             {selectedEvent.delta && (
-              <div className="p-5 rounded-[20px] border border-yellow-500/20 bg-yellow-500/5 space-y-3">
-                <h3 className="text-yellow-500 uppercase text-[10px] tracking-widest font-sans font-bold">
+              <div className="p-5 rounded-[20px] border border-yellow-500/20 bg-yellow-500/10 dark:bg-yellow-500/5 space-y-3">
+                <h3 className="text-yellow-600 dark:text-yellow-500 uppercase text-[10px] tracking-widest font-sans font-bold">
                   Delta Content
                 </h3>
-                <p className="text-yellow-300 font-mono text-sm break-all">
+                <p className="text-yellow-600 dark:text-yellow-300 font-mono text-sm break-all">
                   &quot;{selectedEvent.delta}&quot;
                 </p>
               </div>
@@ -195,18 +195,18 @@ const Inspector: React.FC<InspectorProps> = ({
         {activeTab === 'headers' && (
           <div className="space-y-6">
             {/* Identifiers */}
-            <div className="p-5 rounded-[20px] border border-white/5 bg-white/5 space-y-4">
-              <h3 className="text-slate-500 uppercase text-[10px] tracking-widest font-sans font-bold">
+            <div className="p-5 rounded-[20px] border border-border bg-muted/30 space-y-4">
+              <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
                 Event Identifiers
               </h3>
               <div className="space-y-3 text-xs">
                 {selectedEvent.eventId && (
                   <div className="flex justify-between items-start">
-                    <span className="text-slate-500 flex items-center gap-2">
+                    <span className="text-muted-foreground flex items-center gap-2">
                       <Hash className="size-3" />
                       Event ID
                     </span>
-                    <span className="text-slate-300 font-mono text-[10px] text-right max-w-[200px] break-all">
+                    <span className="text-foreground font-mono text-[10px] text-right max-w-[200px] break-all">
                       {selectedEvent.eventId}
                     </span>
                   </div>
@@ -214,7 +214,7 @@ const Inspector: React.FC<InspectorProps> = ({
 
                 {selectedEvent.responseId && (
                   <div className="flex justify-between items-start">
-                    <span className="text-slate-500 flex items-center gap-2">
+                    <span className="text-muted-foreground flex items-center gap-2">
                       <Hash className="size-3" />
                       Response ID
                     </span>
@@ -226,11 +226,11 @@ const Inspector: React.FC<InspectorProps> = ({
 
                 {selectedEvent.itemId && (
                   <div className="flex justify-between items-start">
-                    <span className="text-slate-500 flex items-center gap-2">
+                    <span className="text-muted-foreground flex items-center gap-2">
                       <Hash className="size-3" />
                       Item ID
                     </span>
-                    <span className="text-slate-300 font-mono text-[10px] text-right max-w-[200px] break-all">
+                    <span className="text-foreground font-mono text-[10px] text-right max-w-[200px] break-all">
                       {selectedEvent.itemId}
                     </span>
                   </div>
@@ -238,11 +238,11 @@ const Inspector: React.FC<InspectorProps> = ({
 
                 {selectedEvent.callId && (
                   <div className="flex justify-between items-start">
-                    <span className="text-slate-500 flex items-center gap-2">
+                    <span className="text-muted-foreground flex items-center gap-2">
                       <Hash className="size-3" />
                       Call ID
                     </span>
-                    <span className="text-orange-400 font-mono text-[10px] text-right max-w-[200px] break-all">
+                    <span className="text-orange-600 dark:text-orange-400 font-mono text-[10px] text-right max-w-[200px] break-all">
                       {selectedEvent.callId}
                     </span>
                   </div>
@@ -250,22 +250,22 @@ const Inspector: React.FC<InspectorProps> = ({
 
                 {selectedEvent.outputIndex !== undefined && (
                   <div className="flex justify-between items-start">
-                    <span className="text-slate-500 flex items-center gap-2">
+                    <span className="text-muted-foreground flex items-center gap-2">
                       <Hash className="size-3" />
                       Output Index
                     </span>
-                    <span className="text-slate-300 font-mono text-[10px]">
+                    <span className="text-foreground font-mono text-[10px]">
                       {selectedEvent.outputIndex}
                     </span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-start">
-                  <span className="text-slate-500 flex items-center gap-2">
+                  <span className="text-muted-foreground flex items-center gap-2">
                     <Hash className="size-3" />
                     Session ID
                   </span>
-                  <span className="text-slate-300 font-mono text-[10px] text-right max-w-[200px] break-all">
+                  <span className="text-foreground font-mono text-[10px] text-right max-w-[200px] break-all">
                     {selectedEvent.sessionId}
                   </span>
                 </div>
@@ -274,27 +274,27 @@ const Inspector: React.FC<InspectorProps> = ({
 
             {/* Session Info */}
             {sessionData && (
-              <div className="p-5 rounded-[20px] border border-white/5 bg-white/5 space-y-4">
-                <h3 className="text-slate-500 uppercase text-[10px] tracking-widest font-sans font-bold">
+              <div className="p-5 rounded-[20px] border border-border bg-muted/30 space-y-4">
+                <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
                   Session Config
                 </h3>
                 <div className="space-y-3 text-xs">
                   {sessionData.model && (
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Model</span>
-                      <span className="text-slate-300">{sessionData.model}</span>
+                      <span className="text-muted-foreground">Model</span>
+                      <span className="text-foreground">{sessionData.model}</span>
                     </div>
                   )}
                   {sessionData.voice && (
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Voice</span>
-                      <span className="text-slate-300">{sessionData.voice}</span>
+                      <span className="text-muted-foreground">Voice</span>
+                      <span className="text-foreground">{sessionData.voice}</span>
                     </div>
                   )}
                   {sessionData.modalities && (
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Modalities</span>
-                      <span className="text-slate-300">{sessionData.modalities.join(', ')}</span>
+                      <span className="text-muted-foreground">Modalities</span>
+                      <span className="text-foreground">{sessionData.modalities.join(', ')}</span>
                     </div>
                   )}
                 </div>
@@ -308,7 +308,7 @@ const Inspector: React.FC<InspectorProps> = ({
             {/* Event Sequence */}
             {relatedEvents.length > 0 && (
               <div className="space-y-4">
-                <h3 className="text-slate-500 uppercase text-[10px] tracking-widest font-sans font-bold">
+                <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
                   Event Sequence ({relatedEvents.length} events)
                 </h3>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
@@ -320,17 +320,17 @@ const Inspector: React.FC<InspectorProps> = ({
                         className={`p-3 rounded-xl border transition-all ${
                           isSelected
                             ? 'bg-primary/10 border-primary/30'
-                            : 'bg-white/5 border-white/5 hover:bg-white/10'
+                            : 'bg-muted/30 border-border hover:bg-muted/50'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-[10px] text-slate-600 w-6">{index + 1}.</span>
+                          <span className="text-[10px] text-muted-foreground w-6">{index + 1}.</span>
                           <span className={`text-[11px] font-mono flex-1 ${
-                            isSelected ? 'text-primary font-bold' : 'text-slate-400'
+                            isSelected ? 'text-primary font-bold' : 'text-muted-foreground'
                           }`}>
                             {EVENT_DISPLAY_NAMES[event.eventType] || event.eventType}
                           </span>
-                          <span className="text-[10px] text-slate-600">
+                          <span className="text-[10px] text-muted-foreground">
                             {formatTimestamp(event.timestamp)}
                           </span>
                         </div>
@@ -349,31 +349,31 @@ const Inspector: React.FC<InspectorProps> = ({
 
             {/* Navigation */}
             <div className="space-y-3">
-              <h3 className="text-slate-500 uppercase text-[10px] tracking-widest font-sans font-bold">
+              <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
                 Navigation
               </h3>
               <div className="space-y-2">
                 {previousEvent && (
-                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 cursor-pointer flex justify-between items-center transition-all">
+                  <div className="p-4 rounded-2xl bg-muted/30 border border-border hover:bg-muted/50 cursor-pointer flex justify-between items-center transition-all">
                     <div className="flex items-center gap-2">
-                      <ChevronLeft className="size-4 text-slate-500" />
+                      <ChevronLeft className="size-4 text-muted-foreground" />
                       <span className="text-primary/80 text-sm truncate font-medium">
                         {EVENT_DISPLAY_NAMES[previousEvent.eventType] || previousEvent.eventType}
                       </span>
                     </div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-widest">Previous</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Previous</span>
                   </div>
                 )}
                 {nextEvent && (
-                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 cursor-pointer flex justify-between items-center transition-all">
+                  <div className="p-4 rounded-2xl bg-muted/30 border border-border hover:bg-muted/50 cursor-pointer flex justify-between items-center transition-all">
                     <div className="flex items-center gap-2">
-                      <span className="text-orange-400/80 text-sm truncate font-medium">
+                      <span className="text-orange-600/80 dark:text-orange-400/80 text-sm truncate font-medium">
                         {EVENT_DISPLAY_NAMES[nextEvent.eventType] || nextEvent.eventType}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-500 uppercase tracking-widest">Next</span>
-                      <ChevronRight className="size-4 text-slate-500" />
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Next</span>
+                      <ChevronRight className="size-4 text-muted-foreground" />
                     </div>
                   </div>
                 )}
@@ -385,7 +385,7 @@ const Inspector: React.FC<InspectorProps> = ({
         {activeTab === 'raw' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-slate-500 uppercase text-[10px] tracking-widest font-sans font-bold">
+              <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
                 Raw Log Line
               </h3>
               <button
@@ -396,8 +396,8 @@ const Inspector: React.FC<InspectorProps> = ({
                 {copied ? 'Copied!' : 'Copy'}
               </button>
             </div>
-            <div className="bg-black/60 p-4 rounded-2xl border border-white/5 overflow-x-auto">
-              <pre className="text-[10px] font-mono text-slate-400 whitespace-pre-wrap break-all leading-relaxed">
+            <div className="bg-card dark:bg-black/60 p-4 rounded-2xl border border-border overflow-x-auto">
+              <pre className="text-[10px] font-mono text-muted-foreground whitespace-pre-wrap break-all leading-relaxed">
                 {selectedEvent.rawLine}
               </pre>
             </div>

@@ -248,11 +248,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
 
   if (!audioData) {
     return (
-      <div className={`flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 text-slate-500 ${className}`}>
+      <div className={`flex items-center gap-3 p-3 rounded-xl bg-muted/50 text-muted-foreground ${className}`}>
         <Volume2 className="size-5" />
         <span className="text-xs">No audio data available</span>
         {chunkCount !== undefined && chunkCount > 0 && (
-          <span className="text-[10px] text-slate-600">({chunkCount} chunks)</span>
+          <span className="text-[10px] text-muted-foreground/80">({chunkCount} chunks)</span>
         )}
       </div>
     );
@@ -260,7 +260,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
 
   if (error) {
     return (
-      <div className={`flex items-center gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 ${className}`}>
+      <div className={`flex items-center gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 ${className}`}>
         <VolumeX className="size-5" />
         <span className="text-xs">{error}</span>
       </div>
@@ -268,11 +268,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
   }
 
   return (
-    <div className={`flex items-center gap-4 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50 ${className}`}>
+    <div className={`flex items-center gap-4 p-3 rounded-xl bg-muted/50 border border-border ${className}`}>
       {/* Play/Pause Button */}
       <button
         onClick={isPlaying ? handlePause : handlePlay}
-        className="size-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center hover:bg-green-500/30 transition-colors"
+        className="size-10 shrink-0 rounded-full bg-green-500/20 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-500/30 transition-colors"
       >
         {isPlaying ? (
           <Pause className="size-5" />
@@ -283,13 +283,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
 
       {/* Progress Bar */}
       <div className="flex-1 space-y-1">
-        <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-100"
             style={{ width: `${progress * 100}%` }}
           />
         </div>
-        <div className="flex justify-between text-[10px] font-mono text-slate-500">
+        <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
           <span>{formatTime(progress * duration)}</span>
           <span>{formatTime(duration)}</span>
         </div>
@@ -299,14 +299,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
       <div className="flex items-center gap-2">
         <button
           onClick={handleRestart}
-          className="size-8 rounded-full hover:bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+          className="size-8 rounded-full hover:bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
           title="Restart"
         >
           <RotateCcw className="size-4" />
         </button>
         <button
           onClick={toggleMute}
-          className="size-8 rounded-full hover:bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+          className="size-8 rounded-full hover:bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
           title={isMuted ? 'Unmute' : 'Mute'}
         >
           {isMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
@@ -315,7 +315,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
 
       {/* Chunk Count */}
       {chunkCount !== undefined && chunkCount > 0 && (
-        <div className="text-[10px] text-slate-600">
+        <div className="text-[10px] text-muted-foreground/80">
           {chunkCount} chunks
         </div>
       )}

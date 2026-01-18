@@ -16,7 +16,7 @@ const Waveform: React.FC<WaveformProps> = ({
   const colorClasses = {
     primary: 'bg-primary',
     secondary: 'bg-secondary',
-    green: 'bg-green-500',
+    green: 'bg-green-600 dark:bg-green-500',
   };
 
   const sizeClasses = {
@@ -36,7 +36,7 @@ const Waveform: React.FC<WaveformProps> = ({
 
   return (
     <div
-      className={`flex items-end px-4 py-2 bg-black/40 rounded-2xl border border-white/5 w-full ${sizeClasses[size]}`}
+      className={`flex items-end px-4 py-2 bg-muted/30 dark:bg-black/40 rounded-2xl border border-border dark:border-white/5 w-full ${sizeClasses[size]}`}
     >
       {heights.map((h, i) => (
         <div
