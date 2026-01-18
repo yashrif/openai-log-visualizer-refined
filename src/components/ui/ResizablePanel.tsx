@@ -151,13 +151,13 @@ const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({
               size="icon"
               onClick={togglePanel}
               className={cn(
-                "absolute z-20 size-6 rounded-full bg-bg-deep/80 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all",
+                "absolute z-20 size-8 rounded-full bg-bg-deep/80 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all z-50",
                 side === "left"
                   ? "right-0 translate-x-1/2 top-4"
                   : "left-0 -translate-x-1/2 top-4"
               )}
             >
-              <Icon className="size-3.5 text-slate-400" />
+              <Icon className="size-5 text-slate-400" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side={side === "left" ? "right" : "left"} className="text-xs">

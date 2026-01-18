@@ -176,6 +176,9 @@
     @apply bg-background text-foreground;
     font-family: var(--font-display);
   }
+  button {
+    cursor: pointer;
+  }
 }
 
 /* ========================================

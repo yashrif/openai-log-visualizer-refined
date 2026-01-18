@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import {
-  Download,
   Trash2,
   Lock,
   Play,
@@ -19,6 +18,17 @@ import {
   Check,
   Clock,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   ConversationItem,
   ParsedEvent,
@@ -38,6 +48,7 @@ interface MainLogProps {
   onEventSelect: (event: ParsedEvent, conversationItem?: ConversationItem) => void;
   onConversationItemSelect: (item: ConversationItem) => void;
   selectedEventId?: string;
+  onDelete?: () => void;
 }
 
 // ==================== SESSION EVENT COMPONENT ====================
@@ -509,6 +520,7 @@ const MainLog: React.FC<MainLogProps> = ({
   onEventSelect,
   onConversationItemSelect,
   selectedEventId,
+  onDelete,
 }) => {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
@@ -520,6 +532,8 @@ const MainLog: React.FC<MainLogProps> = ({
   const handleEventClick = (event: ParsedEvent, item: ConversationItem) => {
     onEventSelect(event, item);
   };
+
+
 
   // Get display session ID
   const displaySessionId = sessionData?.id
@@ -544,12 +558,32 @@ const MainLog: React.FC<MainLogProps> = ({
           )}
         </div>
         <div className="flex gap-2">
-          <button className="size-8 flex items-center justify-center hover:bg-accent rounded-full text-muted-foreground hover:text-foreground transition-all">
-            <Download className="size-5" />
-          </button>
-          <button className="size-8 flex items-center justify-center hover:bg-accent rounded-full text-muted-foreground hover:text-foreground transition-all">
-            <Trash2 className="size-5" />
-          </button>
+          {onDelete && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="size-8 flex items-center justify-center hover:bg-accent rounded-full text-muted-foreground hover:text-foreground transition-all"
+                  title="Clear all logs"
+                >
+                  <Trash2 className="size-5" />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your current session logs and reset the view.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={onDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </div>
 

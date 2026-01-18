@@ -297,6 +297,7 @@ export default function Home() {
           onEventSelect={handleEventSelect}
           onConversationItemSelect={handleConversationItemSelect}
           selectedEventId={selectedEvent?.id}
+          onDelete={handleReset}
         />
         <CollapsiblePanel
           side="right"
