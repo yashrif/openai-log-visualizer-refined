@@ -15,15 +15,14 @@ import {
 } from '@/lib/ui-types';
 
 
-interface LogApiResponse {
-  success: boolean;
+import {
+  processLogContent,
+  ProcessedLogResult
+} from '@/lib/client-log-processor';
+
+interface LogApiResponse extends Partial<ProcessedLogResult> {
+  success?: boolean;
   fileName?: string;
-  totalEvents?: number;
-  sessions?: string[];
-  currentSession?: string;
-  sessionData?: SessionData;
-  conversationItems?: ConversationItem[];
-  rawEvents?: ParsedEvent[];
   error?: string;
 }
 
@@ -91,17 +90,16 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await fetch('/api/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-      });
+      // Simulate async processing to solve blocking UI
+      await new Promise(resolve => setTimeout(resolve, 10));
 
-      const data: LogApiResponse = await response.json();
+      const result = processLogContent(content);
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to parse logs');
-      }
+      const data: LogApiResponse = {
+        success: true,
+        fileName: fileName || 'pasted-content',
+        ...result
+      };
 
       processApiResponse(data, fileName);
     } catch (err) {
