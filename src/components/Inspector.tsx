@@ -66,7 +66,7 @@ const Inspector: React.FC<InspectorProps> = ({
   // Empty state
   if (!selectedEvent) {
     return (
-      <aside className="w-[440px] flex flex-col glass-inspector">
+      <aside className="w-full h-full flex flex-col">
         <div className="flex border-b border-white/5 bg-white/5 p-1 mx-6 mt-6 rounded-2xl">
           {tabs.map((tab) => (
             <button
@@ -89,7 +89,7 @@ const Inspector: React.FC<InspectorProps> = ({
   }
 
   return (
-    <aside className="w-[440px] flex flex-col glass-inspector">
+    <aside className="w-full h-full flex flex-col">
       {/* Tabs */}
       <div className="flex border-b border-white/5 bg-white/5 p-1 mx-6 mt-6 rounded-2xl">
         {tabs.map((tab) => (

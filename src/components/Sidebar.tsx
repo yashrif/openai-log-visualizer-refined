@@ -13,7 +13,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId, onSessionSelect }) => {
   return (
-    <aside className="w-80 flex flex-col glass-sidebar">
+    <aside className="w-full h-full flex flex-col">
       <div className="p-6">
         <div className="relative group">
           <Search className="absolute left-4 top-3 size-[18px] text-slate-500 group-focus-within:text-primary transition-colors" />

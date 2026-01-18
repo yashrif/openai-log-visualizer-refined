@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import MainLog from '@/components/MainLog';
 import Inspector from '@/components/Inspector';
 import LogLoader from '@/components/LogLoader';
+import { CollapsiblePanel } from '@/components/ui/ResizablePanel';
 import {
   ConversationItem,
   ParsedEvent,
@@ -172,11 +173,20 @@ export default function Home() {
       <Header fileName={loadedFileName} onReset={handleReset} />
 
       <div className="flex flex-1 overflow-hidden z-20">
-        <Sidebar
-          sessions={sessions}
-          activeSessionId={activeSessionId || ''}
-          onSessionSelect={handleSessionChange}
-        />
+        <CollapsiblePanel
+          side="left"
+          defaultWidth={320}
+          minWidth={240}
+          maxWidth={500}
+          title="Sessions"
+          className="glass-sidebar"
+        >
+          <Sidebar
+            sessions={sessions}
+            activeSessionId={activeSessionId || ''}
+            onSessionSelect={handleSessionChange}
+          />
+        </CollapsiblePanel>
         <MainLog
           conversationItems={conversationItems}
           sessionData={sessionData}
@@ -186,12 +196,21 @@ export default function Home() {
           onConversationItemSelect={handleConversationItemSelect}
           selectedEventId={selectedEvent?.id}
         />
-        <Inspector
-          selectedEvent={selectedEvent}
-          relatedEvents={getRelatedEvents()}
-          conversationItem={selectedConversationItem}
-          sessionData={sessionData}
-        />
+        <CollapsiblePanel
+          side="right"
+          defaultWidth={440}
+          minWidth={320}
+          maxWidth={700}
+          title="Inspector"
+          className="glass-inspector"
+        >
+          <Inspector
+            selectedEvent={selectedEvent}
+            relatedEvents={getRelatedEvents()}
+            conversationItem={selectedConversationItem}
+            sessionData={sessionData}
+          />
+        </CollapsiblePanel>
       </div>
     </div>
   );

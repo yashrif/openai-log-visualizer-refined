@@ -26,24 +26,53 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
   // Convert base64 PCM16 to AudioBuffer
   const decodeAudioData = useCallback(async (base64Data: string): Promise<AudioBuffer | null> => {
     try {
+      // Validate input
+      if (!base64Data || base64Data.trim().length === 0) {
+        setError('Empty audio data');
+        return null;
+      }
+
       // Remove data URL prefix if present (e.g., "data:audio/pcm;base64,")
       let cleanBase64 = base64Data;
       if (base64Data.includes(',')) {
         cleanBase64 = base64Data.split(',').pop() || base64Data;
       }
-      
+
       // Remove any whitespace or newlines that might be in the base64 string
       cleanBase64 = cleanBase64.replace(/\s/g, '');
-      
+
+      // Remove surrounding quotes if present
+      cleanBase64 = cleanBase64.replace(/^"+|"+$/g, '');
+
+      // Validate base64 characters
+      if (!/^[A-Za-z0-9+/=_-]*$/.test(cleanBase64)) {
+        setError('Invalid base64 characters');
+        return null;
+      }
+
+      // Length mod 4 == 1 is invalid and cannot be fixed with padding
+      if (cleanBase64.length % 4 === 1) {
+        setError('Invalid base64 length');
+        return null;
+      }
+
       // Handle URL-safe base64 (convert - to + and _ to /)
       cleanBase64 = cleanBase64.replace(/-/g, '+').replace(/_/g, '/');
-      
+
       // Add padding if missing (base64 strings should be divisible by 4)
       const paddingNeeded = (4 - (cleanBase64.length % 4)) % 4;
       cleanBase64 += '='.repeat(paddingNeeded);
-      
+
       // Decode base64 to binary
-      const binaryString = atob(cleanBase64);
+      let binaryString: string;
+      try {
+        binaryString = atob(cleanBase64);
+      } catch (e) {
+        console.error('Base64 decode error:', e);
+        setError('Invalid base64 encoding');
+        return null;
+      }
+
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
@@ -54,8 +83,21 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
       const numChannels = 1;
       const bytesPerSample = 2;
 
-      // Create audio buffer
-      const numSamples = bytes.length / bytesPerSample;
+      // Validate byte array length
+      if (bytes.length === 0) {
+        setError('No audio data decoded');
+        return null;
+      }
+
+      // Ensure we have complete samples (bytes must be even for 16-bit audio)
+      const validByteLength = Math.floor(bytes.length / bytesPerSample) * bytesPerSample;
+      if (validByteLength === 0) {
+        setError('Insufficient audio data');
+        return null;
+      }
+
+      // Create audio buffer with validated sample count
+      const numSamples = validByteLength / bytesPerSample;
 
       if (!audioContextRef.current) {
         audioContextRef.current = new AudioContext({ sampleRate });
@@ -71,13 +113,17 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
 
       // Convert PCM16 to float32
       const channelData = audioBuffer.getChannelData(0);
-      const dataView = new DataView(bytes.buffer);
+      const dataView = new DataView(bytes.buffer, bytes.byteOffset, validByteLength);
 
       for (let i = 0; i < numSamples; i++) {
-        // PCM16 is little-endian signed 16-bit
-        const sample = dataView.getInt16(i * bytesPerSample, true);
-        // Normalize to -1.0 to 1.0
-        channelData[i] = sample / 32768;
+        const offset = i * bytesPerSample;
+        // Verify offset is within bounds before reading
+        if (offset + bytesPerSample <= validByteLength) {
+          // PCM16 is little-endian signed 16-bit
+          const sample = dataView.getInt16(offset, true);
+          // Normalize to -1.0 to 1.0
+          channelData[i] = sample / 32768;
+        }
       }
 
       return audioBuffer;

@@ -251,11 +251,22 @@ function mergeBase64Chunks(chunks: string[]): string {
   if (chunks.length === 0) return '';
   if (chunks.length === 1) return chunks[0];
 
-  // Remove padding from all chunks except potentially needed at the end
-  const strippedChunks = chunks.map(chunk => chunk.replace(/=+$/, ''));
+  // Normalize chunks: trim, remove data URL prefix, whitespace, url-safe chars, and padding
+  const normalizedChunks = chunks
+    .map(chunk => chunk.trim())
+    .map(chunk => (chunk.includes(',') ? (chunk.split(',').pop() || '') : chunk))
+    .map(chunk => chunk.replace(/\s/g, ''))
+    .map(chunk => chunk.replace(/-/g, '+').replace(/_/g, '/'))
+    .map(chunk => chunk.replace(/=+$/, ''))
+    .filter(chunk => chunk.length > 0);
+
+  if (normalizedChunks.length === 0) return '';
 
   // Join all chunks
-  const joined = strippedChunks.join('');
+  const joined = normalizedChunks.join('');
+
+  // Length mod 4 == 1 is invalid and cannot be fixed with padding
+  if (joined.length % 4 === 1) return '';
 
   // Add proper padding (base64 must be divisible by 4)
   const paddingNeeded = (4 - (joined.length % 4)) % 4;
