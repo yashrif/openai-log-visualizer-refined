@@ -8,9 +8,18 @@ import { ModeToggle } from '@/components/mode-toggle';
 interface HeaderProps {
   fileName?: string | null;
   onReset?: () => void;
+  avgLatency?: number | null;
+  duration?: string | null;
+  onSettingsClick?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ fileName, onReset }) => {
+const Header: React.FC<HeaderProps> = ({
+  fileName,
+  onReset,
+  avgLatency,
+  duration,
+  onSettingsClick
+}) => {
   return (
     <header className="h-16 flex items-center justify-between px-8 border-b border-border bg-background/80 backdrop-blur-xl z-30 shrink-0 sticky top-0">
       <div className="flex items-center gap-5">
@@ -53,27 +62,26 @@ const Header: React.FC<HeaderProps> = ({ fileName, onReset }) => {
         <div className="h-6 w-px bg-border mx-1"></div>
 
         <div className="flex gap-1 items-center">
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-accent transition-all text-muted-foreground hover:text-foreground">
-            <Wifi className="size-[18px]" />
-            <span className="font-mono text-xs">45ms</span>
-          </button>
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-accent transition-all text-muted-foreground hover:text-foreground">
-            <Clock className="size-[18px]" />
-            <span className="font-mono text-xs">05:22</span>
-          </button>
+          {avgLatency != null && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/20 text-foreground cursor-help" title="Average Response Latency">
+              <Wifi className="size-[18px]" />
+              <span className="font-mono text-xs">{Math.round(avgLatency)}ms</span>
+            </div>
+          )}
+          {duration && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/20 text-foreground cursor-default" title="Session Duration">
+              <Clock className="size-[18px]" />
+              <span className="font-mono text-xs">{duration}</span>
+            </div>
+          )}
         </div>
 
-        <ModeToggle />
-
-        <button className="size-9 rounded-full hover:bg-accent flex items-center justify-center transition-all text-muted-foreground hover:text-foreground">
+        <button
+          onClick={onSettingsClick}
+          className="size-9 rounded-full hover:bg-accent flex items-center justify-center transition-all text-muted-foreground hover:text-foreground"
+        >
           <Settings className="size-5" />
         </button>
-
-        <div className="size-9 rounded-full bg-gradient-to-br from-secondary/50 to-primary/50 p-[1px] shadow-lg shadow-black/20 dark:shadow-black/50">
-          <div className="size-full rounded-full bg-background flex items-center justify-center">
-            <User className="size-4 text-foreground" />
-          </div>
-        </div>
       </div>
     </header>
   );

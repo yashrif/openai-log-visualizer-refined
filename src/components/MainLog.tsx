@@ -643,19 +643,6 @@ const MainLog: React.FC<MainLogProps> = ({
 
         <div className="h-20"></div>
       </div>
-
-      {/* Footer */}
-      <div className="p-6 border-t border-border bg-background/80 backdrop-blur-md z-10">
-        <div className="relative">
-          <input
-            className="w-full bg-muted/50 border border-border rounded-2xl px-6 py-4 text-sm text-muted-foreground cursor-not-allowed font-mono focus:outline-none"
-            disabled
-            placeholder="Visualizer Mode - Read Only"
-            type="text"
-          />
-          <Lock className="absolute right-6 top-4 size-5 text-muted-foreground" />
-        </div>
-      </div>
     </main>
   );
 };

@@ -13,6 +13,7 @@ import {
   SessionData,
   Session,
 } from '@/lib/ui-types';
+import { SettingsDialog } from '@/components/SettingsDialog';
 
 interface LogApiResponse {
   success: boolean;
@@ -36,6 +37,7 @@ export default function Home() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   // Log data state
+  const [allConversationItems, setAllConversationItems] = useState<ConversationItem[]>([]);
   const [conversationItems, setConversationItems] = useState<ConversationItem[]>([]);
   const [rawEvents, setRawEvents] = useState<ParsedEvent[]>([]);
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
@@ -65,7 +67,18 @@ export default function Home() {
     }
 
     // Update conversation data
-    setConversationItems(data.conversationItems || []);
+    const items = data.conversationItems || [];
+    setAllConversationItems(items);
+
+    // Initial filter if needed
+    if (data.currentSession) {
+       setConversationItems(items.filter(item =>
+         item.events.some(e => e.sessionId === data.currentSession)
+       ));
+    } else {
+       setConversationItems(items);
+    }
+
     setRawEvents(data.rawEvents || []);
     setSessionData(data.sessionData || null);
     setLoadedFileName(fileName || data.fileName || null);
@@ -110,14 +123,14 @@ export default function Home() {
     const filteredEvents = rawEvents.filter(e => e.sessionId === sessionId);
 
     // We need to rebuild conversation items for this session
-    // For now, just filter existing items
-    const filteredItems = conversationItems.filter(item =>
+    // Filter from ALL items, not the currently displayed ones
+    const filteredItems = allConversationItems.filter(item =>
       item.events.some(e => e.sessionId === sessionId)
     );
 
     setConversationItems(filteredItems);
     setIsLoading(false);
-  }, [rawEvents, conversationItems]);
+  }, [rawEvents, allConversationItems]);
 
   // Handle event selection (for Inspector)
   const handleEventSelect = (event: ParsedEvent, conversationItem?: ConversationItem) => {
@@ -140,12 +153,82 @@ export default function Home() {
     return rawEvents.filter(e => e.responseId === selectedEvent.responseId);
   };
 
+  // Settings state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Derived metrics
+  // Derived metrics
+  const calculateMetrics = () => {
+    const activeEvents = activeSessionId
+      ? rawEvents.filter(e => e.sessionId === activeSessionId)
+      : rawEvents;
+
+    if (!activeEvents.length) return { duration: null, avgLatency: null };
+
+    // Calculate Duration
+    const startTimeSource = activeEvents[0]?.timestamp;
+    const endTimeSource = activeEvents[activeEvents.length - 1]?.timestamp;
+
+    let duration = null;
+    if (startTimeSource && endTimeSource) {
+      const start = new Date(startTimeSource).getTime();
+      const end = new Date(endTimeSource).getTime();
+      const diff = end - start;
+      const minutes = Math.floor(diff / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      duration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Calculate Latency (Response Creation -> First Delta)
+    let totalLatency = 0;
+    let count = 0;
+
+    // Group events by response_id to analyze response lifecycle
+    const responses = new Map<string, { created?: number; firstDelta?: number }>();
+
+    activeEvents.forEach(e => {
+      if (!e.responseId) return;
+
+      const ts = new Date(e.timestamp).getTime();
+
+      if (e.eventType === 'response.created') {
+        const current = responses.get(e.responseId) || {};
+        responses.set(e.responseId, { ...current, created: ts });
+      } else if (
+        (e.eventType === 'response.text.delta' || e.eventType === 'response.audio.delta') &&
+        !responses.get(e.responseId)?.firstDelta
+      ) {
+        // Only capture the FIRST delta for a response
+        const current = responses.get(e.responseId) || {};
+        responses.set(e.responseId, { ...current, firstDelta: ts });
+      }
+    });
+
+    responses.forEach((times) => {
+      if (times.created && times.firstDelta) {
+        const lat = times.firstDelta - times.created;
+        if (lat > 0 && lat < 10000) { // Filter outliers
+          totalLatency += lat;
+          count++;
+        }
+      }
+    });
+
+    return {
+      duration,
+      avgLatency: count > 0 ? totalLatency / count : null
+    };
+  };
+
+  const { duration, avgLatency } = calculateMetrics();
+
   // Reset to log loader
   const handleReset = () => {
     setIsLogLoaded(false);
     setLoadedFileName(null);
     setSessions([]);
     setActiveSessionId(null);
+    setAllConversationItems([]);
     setConversationItems([]);
     setRawEvents([]);
     setSessionData(null);
@@ -170,7 +253,18 @@ export default function Home() {
       {/* Background Depth Effect */}
       <div className="fixed inset-0 bg-depth-overlay pointer-events-none z-0"></div>
 
-      <Header fileName={loadedFileName} onReset={handleReset} />
+      <Header
+        fileName={loadedFileName}
+        onReset={handleReset}
+        duration={duration}
+        avgLatency={avgLatency}
+        onSettingsClick={() => setIsSettingsOpen(true)}
+      />
+
+      <SettingsDialog
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+      />
 
       <div className="flex flex-1 overflow-hidden z-20">
         <CollapsiblePanel
