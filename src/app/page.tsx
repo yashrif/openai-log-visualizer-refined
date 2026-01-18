@@ -13,7 +13,7 @@ import {
   SessionData,
   Session,
 } from '@/lib/ui-types';
-import { SettingsDialog } from '@/components/SettingsDialog';
+
 
 interface LogApiResponse {
   success: boolean;
@@ -147,14 +147,26 @@ export default function Home() {
     }
   };
 
-  // Get related events for Inspector (same response_id)
+  // Get related events for Inspector
   const getRelatedEvents = (): ParsedEvent[] => {
-    if (!selectedEvent?.responseId) return [];
-    return rawEvents.filter(e => e.responseId === selectedEvent.responseId);
+    // If we have a selected conversation item, preferably use its events as the sequence
+    if (selectedConversationItem?.events && selectedConversationItem.events.length > 0) {
+      // Check if the selected event is actually part of this item (safety check)
+      if (selectedEvent && selectedConversationItem.events.some(e => e.id === selectedEvent.id)) {
+        return selectedConversationItem.events;
+      }
+    }
+
+    // Fallback for response groups (legacy logic or loose events)
+    if (selectedEvent?.responseId) {
+      return rawEvents.filter(e => e.responseId === selectedEvent.responseId);
+    }
+
+    // Default to just the selected event if no sequence found
+    return selectedEvent ? [selectedEvent] : [];
   };
 
-  // Settings state
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
 
   // Derived metrics
   // Derived metrics
@@ -258,13 +270,9 @@ export default function Home() {
         onReset={handleReset}
         duration={duration}
         avgLatency={avgLatency}
-        onSettingsClick={() => setIsSettingsOpen(true)}
       />
 
-      <SettingsDialog
-        open={isSettingsOpen}
-        onOpenChange={setIsSettingsOpen}
-      />
+
 
       <div className="flex flex-1 overflow-hidden z-20">
         <CollapsiblePanel
@@ -303,6 +311,7 @@ export default function Home() {
             relatedEvents={getRelatedEvents()}
             conversationItem={selectedConversationItem}
             sessionData={sessionData}
+            onEventSelect={(event) => handleEventSelect(event, selectedConversationItem || undefined)}
           />
         </CollapsiblePanel>
       </div>

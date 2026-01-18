@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { AudioLines, Wifi, Clock, Settings, User, FileText, X } from 'lucide-react';
+import { AudioLines, Wifi, Clock, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/mode-toggle';
 
@@ -10,7 +10,6 @@ interface HeaderProps {
   onReset?: () => void;
   avgLatency?: number | null;
   duration?: string | null;
-  onSettingsClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -18,7 +17,6 @@ const Header: React.FC<HeaderProps> = ({
   onReset,
   avgLatency,
   duration,
-  onSettingsClick
 }) => {
   return (
     <header className="h-16 flex items-center justify-between px-8 border-b border-border bg-background/80 backdrop-blur-xl z-30 shrink-0 sticky top-0">
@@ -76,12 +74,9 @@ const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        <button
-          onClick={onSettingsClick}
-          className="size-9 rounded-full hover:bg-accent flex items-center justify-center transition-all text-muted-foreground hover:text-foreground"
-        >
-          <Settings className="size-5" />
-        </button>
+        <div className="ml-2">
+            <ModeToggle />
+        </div>
       </div>
     </header>
   );

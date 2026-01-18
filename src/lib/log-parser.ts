@@ -609,6 +609,24 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
         const content = item.content as Array<Record<string, unknown>> | undefined;
         const textContent = content?.find(c => c.type === 'input_text');
         if (textContent) {
+
+          // Check if we have a recent matching user input event
+          // We look backwards through the items to find a user_input item with the same text
+          const matchingItem = items.slice().reverse().find(item =>
+            item.type === 'user_input' &&
+            item.userInput?.text === textContent.text as string &&
+            // Optional: check time proximity if needed, but for now content matching is safest
+            // We assume the client event comes BEFORE the server event
+            true
+          );
+
+          if (matchingItem) {
+            // Merge this event into the existing item
+            matchingItem.events.push(event);
+            continue;
+          }
+
+          // If no match found, create new item (fallback)
           items.push({
             id: `user_${event.id}`,
             type: 'user_input',
@@ -619,10 +637,10 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
             },
             events: [event],
           });
-          continue;
         }
       }
     }
+
 
     // Other system events
     if (event.category === 'system' || event.category === 'unknown') {

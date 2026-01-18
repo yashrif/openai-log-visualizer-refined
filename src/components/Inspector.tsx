@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Copy,
   Check,
   Clock,
@@ -27,6 +28,7 @@ interface InspectorProps {
   relatedEvents: ParsedEvent[];
   conversationItem: ConversationItem | null;
   sessionData: SessionData | null;
+  onEventSelect?: (event: ParsedEvent) => void;
 }
 
 type TabType = 'payload' | 'headers' | 'analysis' | 'raw';
@@ -36,9 +38,11 @@ const Inspector: React.FC<InspectorProps> = ({
   relatedEvents,
   conversationItem,
   sessionData,
+  onEventSelect,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('payload');
   const [copied, setCopied] = useState(false);
+  const [expandedSequenceItems, setExpandedSequenceItems] = useState<Record<string, boolean>>({});
 
   const handleCopyRaw = async () => {
     if (!selectedEvent) return;
@@ -313,7 +317,9 @@ const Inspector: React.FC<InspectorProps> = ({
                 </h3>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {relatedEvents.map((event, index) => {
+                    const isExpanded = !!expandedSequenceItems[event.id];
                     const isSelected = event.id === selectedEvent.id;
+
                     return (
                       <div
                         key={event.id}
@@ -324,18 +330,49 @@ const Inspector: React.FC<InspectorProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedSequenceItems(prev => ({
+                                ...prev,
+                                [event.id]: !prev[event.id]
+                              }));
+                            }}
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                          >
+                           {isExpanded ? (
+                             <ChevronDown className="size-3" />
+                           ) : (
+                             <ChevronRight className="size-3" />
+                           )}
+                          </button>
+
                           <span className="text-[10px] text-muted-foreground w-6">{index + 1}.</span>
-                          <span className={`text-[11px] font-mono flex-1 ${
-                            isSelected ? 'text-primary font-bold' : 'text-muted-foreground'
+                          <button
+                            onClick={() => onEventSelect?.(event)}
+                            className={`text-[11px] font-mono flex-1 text-left ${
+                            isSelected ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
                           }`}>
                             {EVENT_DISPLAY_NAMES[event.eventType] || event.eventType}
-                          </span>
+                          </button>
                           <span className="text-[10px] text-muted-foreground">
                             {formatTimestamp(event.timestamp)}
                           </span>
                         </div>
-                        {isSelected && (
-                          <div className="mt-2 flex items-center gap-1 text-[9px] text-primary">
+
+                        {isExpanded && (
+                          <div className="mt-3 pl-10 pr-2 border-t border-border/50 pt-3">
+                            <JsonViewer
+                              data={event.payload}
+                              initialExpanded={true}
+                              maxHeight="200px"
+                              indentWidth={10}
+                            />
+                          </div>
+                        )}
+
+                        {isSelected && !isExpanded && (
+                          <div className="mt-2 flex items-center gap-1 text-[9px] text-primary pl-10">
                             <ChevronRight className="size-3" />
                             Currently viewing
                           </div>

@@ -9,6 +9,7 @@ interface JsonViewerProps {
   initialExpanded?: boolean;
   maxHeight?: string;
   showCopyButton?: boolean;
+  indentWidth?: number;
 }
 
 // Keys that typically contain markdown content
@@ -22,6 +23,7 @@ const JsonViewer: React.FC<JsonViewerProps> = ({
   initialExpanded = true,
   maxHeight = '400px',
   showCopyButton = true,
+  indentWidth = 10,
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -54,7 +56,12 @@ const JsonViewer: React.FC<JsonViewerProps> = ({
         className="bg-card dark:bg-black/60 p-4 rounded-2xl border border-border overflow-auto font-mono text-xs shadow-inner"
         style={{ maxHeight }}
       >
-        <JsonNode data={data} initialExpanded={initialExpanded} depth={0} />
+        <JsonNode
+          data={data}
+          initialExpanded={initialExpanded}
+          depth={0}
+          indentWidth={indentWidth}
+        />
       </div>
     </div>
   );
@@ -64,6 +71,7 @@ interface JsonNodeProps {
   data: unknown;
   initialExpanded: boolean;
   depth: number;
+  indentWidth: number;
   keyName?: string;
 }
 
@@ -153,10 +161,9 @@ const ExpandableString: React.FC<{
   );
 };
 
-const JsonNode: React.FC<JsonNodeProps> = ({ data, initialExpanded, depth, keyName }) => {
+const JsonNode: React.FC<JsonNodeProps> = ({ data, initialExpanded, depth, indentWidth, keyName }) => {
   const [expanded, setExpanded] = useState(initialExpanded && depth < 3);
 
-  const indent = depth * 16;
   const isMarkdownKey = !!keyName && MARKDOWN_KEYS.some(k => keyName.toLowerCase().includes(k));
 
   if (data === null) {
@@ -193,6 +200,9 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, initialExpanded, depth, keyNa
     return <ExpandableString value={data} keyName={keyName} isMarkdown={isMarkdownKey} />;
   }
 
+  const headerStyle = { marginLeft: -indentWidth, paddingLeft: indentWidth };
+  const childrenStyle = { marginLeft: indentWidth };
+
   if (Array.isArray(data)) {
     if (data.length === 0) {
       return (
@@ -207,7 +217,8 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, initialExpanded, depth, keyNa
     return (
       <div>
         <div
-          className="flex items-center cursor-pointer hover:bg-muted/50 -ml-4 pl-4 rounded"
+          className="flex items-center cursor-pointer hover:bg-muted/50 rounded"
+          style={headerStyle}
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? (
@@ -226,19 +237,20 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, initialExpanded, depth, keyNa
         </div>
         {expanded && (
           <>
-            <div style={{ marginLeft: indent + 16 }}>
+            <div style={childrenStyle}>
               {data.map((item, index) => (
                 <div key={index} className="py-0.5">
                   <JsonNode
                     data={item}
                     initialExpanded={initialExpanded}
                     depth={depth + 1}
+                    indentWidth={indentWidth}
                   />
                   {index < data.length - 1 && <span className="text-muted-foreground">,</span>}
                 </div>
               ))}
             </div>
-            <span className="text-muted-foreground" style={{ marginLeft: indent }}>]</span>
+            <span className="text-muted-foreground">]</span>
           </>
         )}
       </div>
@@ -260,7 +272,8 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, initialExpanded, depth, keyNa
     return (
       <div>
         <div
-          className="flex items-center cursor-pointer hover:bg-muted/50 -ml-4 pl-4 rounded"
+          className="flex items-center cursor-pointer hover:bg-muted/50 rounded"
+          style={headerStyle}
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? (
@@ -279,7 +292,7 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, initialExpanded, depth, keyNa
         </div>
         {expanded && (
           <>
-            <div style={{ marginLeft: indent + 16 }}>
+            <div style={childrenStyle}>
               {entries.map(([key, value], index) => (
                 <div key={key} className="py-0.5">
                   <JsonNode
@@ -287,12 +300,13 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, initialExpanded, depth, keyNa
                     keyName={key}
                     initialExpanded={initialExpanded}
                     depth={depth + 1}
+                    indentWidth={indentWidth}
                   />
                   {index < entries.length - 1 && <span className="text-muted-foreground">,</span>}
                 </div>
               ))}
             </div>
-            <span className="text-muted-foreground" style={{ marginLeft: indent }}>{'}'}</span>
+            <span className="text-muted-foreground">{'}'}</span>
           </>
         )}
       </div>
