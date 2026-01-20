@@ -38,13 +38,12 @@ const STANDARD_TAGS = new Set([
 ]);
 
 /**
- * Preprocess markdown to handle non-standard XML tags causing parsing issues.
- * Specifically handles tags with underscores (e.g., <tool_visibility>) by converting
- * them to hyphens (e.g., <tool-visibility>) ONLY if they form a balanced pair.
- * Unmatched tags (mentions) are left alone (escaped by rehype).
+ * Preprocess markdown to handle non-standard XML tags by converting them to
+ * temporary markers. This allows the Markdown parser to process the content inside
+ * the tags (e.g. lists, bold text) which would otherwise be suppressed if wrapped
+ * in HTML block tags.
  *
- * CRITICAL: Converts inline code blocks to HTML <code> matches to ensure they are
- * treated as code even when inside other HTML-like tags (which bypasses standard markdown parsing).
+ * A custom Rehype plugin then converts these markers back into styled div blocks.
  */
 const preprocessMarkdown = (markdown: string): string => {
   if (!markdown) return '';
@@ -63,8 +62,7 @@ const preprocessMarkdown = (markdown: string): string => {
     fencedBlocks.push(match);
     return `__FENCED_BLOCK_${fencedBlocks.length - 1}__`;
   });
-  // Also catch simple inline-style fenced blocks if any (standard markdown allows this but regex is tricky)
-  // Let's stick to standard fenced block detection or simplified generic fence
+  // Also catch simple inline-style fenced blocks if any
   if (processed.includes('```')) {
      processed = processed.replace(/```[\s\S]*?```/g, (match) => {
          if (match.startsWith('__FENCED')) return match; // Already masked
@@ -81,16 +79,12 @@ const preprocessMarkdown = (markdown: string): string => {
 
   // 3. Process tags recursively
   // Generalized Regex to find balanced pairs of ANY tag
-  // 1. Attributes: ((?:\s+(?:[^>"']|"[^"]*"|'[^']*')*)*?)
-  // 2. Slash: (\/?)
-  // 3. Closing: <\/\2\s*>
   const pairRegex = /(<([a-zA-Z][a-zA-Z0-9_\-]*)((?:\s+(?:[^>"']|"[^"]*"|'[^']*')*)*?)\s*(\/?)>)([\s\S]*?)(<\/\2\s*>)/g;
 
   let current = processed;
   // Use recursion to process nested tags correctly
   current = current.replace(pairRegex, (match, openTag, tagName, attrs, slash, content, closeTag) => {
-    // Guard: specific check for self-closing tags to avoid treating them as block openers
-    // We check both the slash group and the raw string for robustness
+    // Guard: specific check for self-closing tags
     if (slash === '/' || openTag.trim().endsWith('/>')) {
       return match;
     }
@@ -98,21 +92,14 @@ const preprocessMarkdown = (markdown: string): string => {
     // Process Content recursively
     const processedContent = preprocessMarkdown(content);
 
-    // If tag is standard HTML, preserve it but insert processed content
+    // If tag is standard HTML, preserve it
     if (STANDARD_TAGS.has(tagName.toLowerCase())) {
       return `${openTag}${processedContent}${closeTag}`;
     }
 
-    // Convert to div to ensure block-level rendering in the HTML parser
-    // This prevents issues where unknown tags are parsed as inline and implicitly nested
-    const safeName = 'div';
-
-    // Inject original name into attributes for recovery
-    // Check if attrs already exist
-    const originalNameAttr = ` data-original-name="${tagName}"`;
-    const safeAttrs = (attrs || '') + originalNameAttr;
-
-    return `<${safeName}${safeAttrs}>${processedContent}</${safeName}>`;
+    // Convert to Special Markers to allow Markdown parsing
+    // We surround markers with double newlines to ensure they act as block boundaries
+    return `\n\n:::CUSTOM_TAG_START|${tagName}|${attrs}:::\n\n${processedContent}\n\n:::CUSTOM_TAG_END|${tagName}:::\n\n`;
   });
 
   // 4. Restore fenced code blocks
@@ -121,58 +108,115 @@ const preprocessMarkdown = (markdown: string): string => {
   });
 };
 
-// Rehype plugin to transform custom XML tags into stylized divs
+// Helper to restructure the HAST tree based on markers
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const groupSiblings = (children: any[]): any[] => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const newChildren: any[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stack: any[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let currentContainer: any = null;
+
+    // Regex to match markers: :::CUSTOM_TAG_START|tagName|attrs:::
+    const startRegex = /^:::CUSTOM_TAG_START\|([^|]+)\|(.*):::$/;
+    const endRegex = /^:::CUSTOM_TAG_END\|([^|]+):::$/;
+
+    for (const child of children) {
+        let isMarker = false;
+        let markerMatch = null;
+        let isStart = false;
+
+        // Check if child is a paragraph containing ONLY our marker text
+        // Remark parses ':::' lines as text paragraphs
+        if (child.tagName === 'p' && child.children && child.children.length === 1 && child.children[0].type === 'text') {
+            const text = child.children[0].value ? child.children[0].value.trim() : '';
+            const sMatch = text.match(startRegex);
+            const eMatch = text.match(endRegex);
+
+            if (sMatch) {
+                isMarker = true;
+                isStart = true;
+                markerMatch = sMatch;
+            } else if (eMatch) {
+                 isMarker = true;
+                 isStart = false;
+                 markerMatch = eMatch;
+            }
+        }
+
+        if (isMarker && markerMatch) {
+            if (isStart) {
+                const tagName = markerMatch[1];
+                const attrsString = markerMatch[2];
+
+                const displayTag = tagName.includes('-') ? tagName.replace(/-/g, '_') : tagName;
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const properties: any = {
+                    className: ['prompt-tag', `prompt-tag-${displayTag.toLowerCase()}`],
+                    'data-tag': displayTag
+                };
+
+                if (attrsString && attrsString.trim()) {
+                     properties['data-attributes'] = attrsString.trim();
+                }
+
+                const newContainer = {
+                    type: 'element',
+                    tagName: 'div',
+                    properties: properties,
+                    children: []
+                };
+
+                if (currentContainer) {
+                    currentContainer.children.push(newContainer);
+                } else {
+                    newChildren.push(newContainer);
+                }
+
+                stack.push(currentContainer);
+                currentContainer = newContainer;
+
+            } else {
+                // End Marker
+                if (stack.length > 0) {
+                    const parent = stack.pop();
+                    currentContainer = parent;
+                } else {
+                    // Unbalanced end tag or at root
+                    currentContainer = null;
+                }
+            }
+        } else {
+            // Normal node
+            if (currentContainer) {
+                currentContainer.children.push(child);
+            } else {
+                newChildren.push(child);
+            }
+        }
+    }
+
+    return newChildren;
+};
+
+// Recursive transformer
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const transformChildren = (node: any) => {
+    if (node.children && node.children.length > 0) {
+        node.children = groupSiblings(node.children);
+        // Recurse into children (including new containers)
+        node.children.forEach(transformChildren);
+    }
+};
+
+// Rehype plugin to transform custom marker paragraphs into stylized divs
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rehypeTransformCustomTags = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (tree: any) => {
-    visit(tree, 'element', (node) => {
-      let tagName = node.tagName.toLowerCase();
-
-      // If it's not a standard HTML tag, or if it has our special marker
-      const originalName = (node.properties?.['data-original-name'] || node.properties?.['dataOriginalName']) as string;
-      const isCustom = !STANDARD_TAGS.has(tagName) || !!originalName;
-
-      if (isCustom) {
-        // Determine display tag
-        const displayTag = originalName || (tagName.includes('-') ? tagName.replace(/-/g, '_') : tagName);
-
-        // Extract detailed attributes (excluding internal ones)
-        const attributes: string[] = [];
-        if (node.properties) {
-           Object.entries(node.properties).forEach(([key, value]) => {
-             if (key !== 'className' && key !== 'data-tag' && key !== 'data-original-name' && key !== 'dataOriginalName') {
-               attributes.push(`${key}="${value}"`);
-             }
-           });
-        }
-        const attributesString = attributes.join(' ');
-
-        // Change to div
-        node.tagName = 'div';
-
-        // Add classes and data attribute
-        node.properties = node.properties || {};
-        node.properties.className = node.properties.className || [];
-        if (Array.isArray(node.properties.className)) {
-          node.properties.className.push('prompt-tag');
-          // Add specific class for the tag name
-          node.properties.className.push(`prompt-tag-${displayTag.toLowerCase()}`);
-        } else {
-          node.properties.className = ['prompt-tag', `prompt-tag-${displayTag.toLowerCase()}`];
-        }
-
-        // Add data attributes for CSS content
-        node.properties['data-tag'] = displayTag;
-        if (attributesString) {
-          node.properties['data-attributes'] = attributesString;
-        }
-
-        // Clean up temp attribute
-        delete node.properties['data-original-name'];
-        delete node.properties['dataOriginalName'];
-      }
-    });
+      transformChildren(tree);
   };
 };
 
@@ -256,6 +300,35 @@ const ExpandableString: React.FC<{
     );
   }
 
+  // Try to parse JSON if it looks like a JSON object or array
+  let jsonContent: unknown = null;
+  let isJson = false;
+  if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
+    try {
+      jsonContent = JSON.parse(value);
+      isJson = true;
+    } catch {
+      // Not valid JSON, ignore
+    }
+  }
+
+  if (isJson && jsonContent && typeof jsonContent === 'object') {
+    return (
+      <div>
+        {keyName && <span className="text-blue-600 dark:text-blue-400">&quot;{keyName}&quot;</span>}
+        {keyName && ': '}
+        <div className="mt-2 pl-2 border-l-2 border-border">
+           <JsonNode
+              data={jsonContent}
+              initialExpanded={true}
+              depth={0}
+              indentWidth={10}
+           />
+        </div>
+      </div>
+    );
+  }
+
   const isLong = value.length > 200;
   const displayValue = expanded || !isLong ? value : value.substring(0, 200);
 
@@ -277,7 +350,7 @@ const ExpandableString: React.FC<{
               Show Raw
             </button>
           </div>
-          <div className="prose prose-sm dark:prose-invert max-w-none text-foreground text-xs leading-relaxed [&_h1]:text-lg [&_h1]:text-foreground [&_h2]:text-base [&_h2]:text-foreground [&_h3]:text-sm [&_h3]:text-foreground [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_code]:text-cyan-600 dark:[&_code]:text-cyan-400 [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded [&_th]:text-left">
+          <div className="prose prose-sm dark:prose-invert max-w-none text-foreground text-xs leading-relaxed [&_h1]:text-lg [&_h1]:text-cyber-primary [&_h1]:my-2 [&_h2]:text-base [&_h2]:text-cyber-secondary [&_h2]:my-2 [&_h3]:text-sm [&_h3]:text-blue-400 [&_h3]:my-2 [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_code]:text-cyan-600 dark:[&_code]:text-cyan-400 [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded [&_th]:text-left [&_ol]:list-decimal [&_ul]:list-disc [&_ol]:pl-4 [&_ul]:pl-4">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw, rehypeTransformCustomTags]}
