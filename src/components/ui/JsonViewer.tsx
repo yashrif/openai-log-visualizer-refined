@@ -78,23 +78,41 @@ const preprocessMarkdown = (markdown: string): string => {
     return `<code>${escapeHtml(content)}</code>`;
   });
 
-  // 3. Process balanced tags in the string (now safe from code conflicts)
+  // 3. Process tags recursively
+  // Generalized Regex to find balanced pairs of ANY tag
+  // 1. Attributes: ((?:\s+(?:[^>"']|"[^"]*"|'[^']*')*)*?)
+  // 2. Slash: (\/?)
+  // 3. Closing: <\/\2\s*>
+  const pairRegex = /(<([a-zA-Z][a-zA-Z0-9_\-]*)((?:\s+(?:[^>"']|"[^"]*"|'[^']*')*)*?)\s*(\/?)>)([\s\S]*?)(<\/\2\s*>)/g;
+
   let current = processed;
-  let previous = '';
-  let loopCount = 0;
-  const maxLoops = 5;
+  // Use recursion to process nested tags correctly
+  current = current.replace(pairRegex, (match, openTag, tagName, attrs, slash, content, closeTag) => {
+    // Guard: specific check for self-closing tags to avoid treating them as block openers
+    // We check both the slash group and the raw string for robustness
+    if (slash === '/' || openTag.trim().endsWith('/>')) {
+      return match;
+    }
 
-  const pairRegex = /(<([a-zA-Z][a-zA-Z0-9_]*_[a-zA-Z0-9_]*)(\s[^>]*)?>)([\s\S]*?)(<\/\2>)/g;
+    // Process Content recursively
+    const processedContent = preprocessMarkdown(content);
 
-  while (current !== previous && loopCount < maxLoops) {
-    previous = current;
-    current = current.replace(pairRegex, (match, openTag, tagName, attrs, content, closeTag) => {
-      const hyphenatedName = tagName.replace(/_/g, '-');
-      const safeAttrs = attrs || '';
-      return `<${hyphenatedName}${safeAttrs}>${content}</${hyphenatedName}>`;
-    });
-    loopCount++;
-  }
+    // If tag is standard HTML, preserve it but insert processed content
+    if (STANDARD_TAGS.has(tagName.toLowerCase())) {
+      return `${openTag}${processedContent}${closeTag}`;
+    }
+
+    // Convert to div to ensure block-level rendering in the HTML parser
+    // This prevents issues where unknown tags are parsed as inline and implicitly nested
+    const safeName = 'div';
+
+    // Inject original name into attributes for recovery
+    // Check if attrs already exist
+    const originalNameAttr = ` data-original-name="${tagName}"`;
+    const safeAttrs = (attrs || '') + originalNameAttr;
+
+    return `<${safeName}${safeAttrs}>${processedContent}</${safeName}>`;
+  });
 
   // 4. Restore fenced code blocks
   return current.replace(/__FENCED_BLOCK_(\d+)__/g, (match, index) => {
@@ -110,10 +128,24 @@ const rehypeTransformCustomTags = () => {
     visit(tree, 'element', (node) => {
       let tagName = node.tagName.toLowerCase();
 
-      // If it's not a standard HTML tag, transform it
-      if (!STANDARD_TAGS.has(tagName)) {
-        // Prepare display name (restore underscores if they were converted)
-        const displayTag = tagName.includes('-') ? tagName.replace(/-/g, '_') : tagName;
+      // If it's not a standard HTML tag, or if it has our special marker
+      const originalName = (node.properties?.['data-original-name'] || node.properties?.['dataOriginalName']) as string;
+      const isCustom = !STANDARD_TAGS.has(tagName) || !!originalName;
+
+      if (isCustom) {
+        // Determine display tag
+        const displayTag = originalName || (tagName.includes('-') ? tagName.replace(/-/g, '_') : tagName);
+
+        // Extract detailed attributes (excluding internal ones)
+        const attributes: string[] = [];
+        if (node.properties) {
+           Object.entries(node.properties).forEach(([key, value]) => {
+             if (key !== 'className' && key !== 'data-tag' && key !== 'data-original-name' && key !== 'dataOriginalName') {
+               attributes.push(`${key}="${value}"`);
+             }
+           });
+        }
+        const attributesString = attributes.join(' ');
 
         // Change to div
         node.tagName = 'div';
@@ -124,13 +156,20 @@ const rehypeTransformCustomTags = () => {
         if (Array.isArray(node.properties.className)) {
           node.properties.className.push('prompt-tag');
           // Add specific class for the tag name
-          node.properties.className.push(`prompt-tag-${displayTag}`);
+          node.properties.className.push(`prompt-tag-${displayTag.toLowerCase()}`);
         } else {
-          node.properties.className = ['prompt-tag', `prompt-tag-${displayTag}`];
+          node.properties.className = ['prompt-tag', `prompt-tag-${displayTag.toLowerCase()}`];
         }
 
-        // Add data-tag attribute for CSS content
+        // Add data attributes for CSS content
         node.properties['data-tag'] = displayTag;
+        if (attributesString) {
+          node.properties['data-attributes'] = attributesString;
+        }
+
+        // Clean up temp attribute
+        delete node.properties['data-original-name'];
+        delete node.properties['dataOriginalName'];
       }
     });
   };
