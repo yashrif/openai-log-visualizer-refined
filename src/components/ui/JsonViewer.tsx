@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import { Copy, Check, ChevronDown, ChevronRight, FileText, Maximize2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import { visit } from 'unist-util-visit';
 
 interface JsonViewerProps {
   data: unknown;
@@ -17,6 +20,121 @@ const MARKDOWN_KEYS = ['instructions', 'description', 'content', 'text', 'system
 
 // Keys that contain binary/base64 data that should be truncated
 const BINARY_KEYS = ['audio', 'delta'];
+
+// Standard HTML tags to ignore during transformation
+const STANDARD_TAGS = new Set([
+  'a', 'abbr', 'address', 'article', 'aside', 'audio', 'b', 'bdi', 'bdo', 'blockquote',
+  'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col', 'colgroup',
+  'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl', 'dt',
+  'em', 'embed', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2',
+  'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'i', 'iframe', 'img',
+  'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark',
+  'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output',
+  'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp',
+  'script', 'section', 'select', 'small', 'source', 'span', 'strong', 'style', 'sub',
+  'summary', 'sup', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th',
+  'thead', 'time', 'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr'
+]);
+
+/**
+ * Preprocess markdown to handle non-standard XML tags causing parsing issues.
+ * Specifically handles tags with underscores (e.g., <tool_visibility>) by converting
+ * them to hyphens (e.g., <tool-visibility>) ONLY if they form a balanced pair.
+ * Unmatched tags (mentions) are left alone (escaped by rehype).
+ *
+ * CRITICAL: Converts inline code blocks to HTML <code> matches to ensure they are
+ * treated as code even when inside other HTML-like tags (which bypasses standard markdown parsing).
+ */
+const preprocessMarkdown = (markdown: string): string => {
+  if (!markdown) return '';
+
+  const escapeHtml = (str: string) => str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // 1. Mask fenced code blocks to protect them (and preserve formatting/lang)
+  const fencedBlocks: string[] = [];
+  let processed = markdown;
+
+  // Mask fenced code blocks (```...```)
+  processed = processed.replace(/^```[\s\S]*?^```/gm, (match) => {
+    fencedBlocks.push(match);
+    return `__FENCED_BLOCK_${fencedBlocks.length - 1}__`;
+  });
+  // Also catch simple inline-style fenced blocks if any (standard markdown allows this but regex is tricky)
+  // Let's stick to standard fenced block detection or simplified generic fence
+  if (processed.includes('```')) {
+     processed = processed.replace(/```[\s\S]*?```/g, (match) => {
+         if (match.startsWith('__FENCED')) return match; // Already masked
+         fencedBlocks.push(match);
+         return `__FENCED_BLOCK_${fencedBlocks.length - 1}__`;
+     });
+  }
+
+  // 2. Convert inline code blocks to HTML <code> to enforce code rendering context
+  // Regex matches pairs of backticks (one or more)
+  processed = processed.replace(/(`+)([\s\S]*?)\1/g, (match, ticks, content) => {
+    return `<code>${escapeHtml(content)}</code>`;
+  });
+
+  // 3. Process balanced tags in the string (now safe from code conflicts)
+  let current = processed;
+  let previous = '';
+  let loopCount = 0;
+  const maxLoops = 5;
+
+  const pairRegex = /(<([a-zA-Z][a-zA-Z0-9_]*_[a-zA-Z0-9_]*)(\s[^>]*)?>)([\s\S]*?)(<\/\2>)/g;
+
+  while (current !== previous && loopCount < maxLoops) {
+    previous = current;
+    current = current.replace(pairRegex, (match, openTag, tagName, attrs, content, closeTag) => {
+      const hyphenatedName = tagName.replace(/_/g, '-');
+      const safeAttrs = attrs || '';
+      return `<${hyphenatedName}${safeAttrs}>${content}</${hyphenatedName}>`;
+    });
+    loopCount++;
+  }
+
+  // 4. Restore fenced code blocks
+  return current.replace(/__FENCED_BLOCK_(\d+)__/g, (match, index) => {
+    return fencedBlocks[parseInt(index)] || match;
+  });
+};
+
+// Rehype plugin to transform custom XML tags into stylized divs
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const rehypeTransformCustomTags = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (tree: any) => {
+    visit(tree, 'element', (node) => {
+      let tagName = node.tagName.toLowerCase();
+
+      // If it's not a standard HTML tag, transform it
+      if (!STANDARD_TAGS.has(tagName)) {
+        // Prepare display name (restore underscores if they were converted)
+        const displayTag = tagName.includes('-') ? tagName.replace(/-/g, '_') : tagName;
+
+        // Change to div
+        node.tagName = 'div';
+
+        // Add classes and data attribute
+        node.properties = node.properties || {};
+        node.properties.className = node.properties.className || [];
+        if (Array.isArray(node.properties.className)) {
+          node.properties.className.push('prompt-tag');
+          // Add specific class for the tag name
+          node.properties.className.push(`prompt-tag-${displayTag}`);
+        } else {
+          node.properties.className = ['prompt-tag', `prompt-tag-${displayTag}`];
+        }
+
+        // Add data-tag attribute for CSS content
+        node.properties['data-tag'] = displayTag;
+      }
+    });
+  };
+};
 
 const JsonViewer: React.FC<JsonViewerProps> = ({
   data,
@@ -118,8 +236,13 @@ const ExpandableString: React.FC<{
               Show Raw
             </button>
           </div>
-          <div className="prose prose-sm dark:prose-invert max-w-none text-foreground text-xs leading-relaxed [&_h1]:text-lg [&_h1]:text-foreground [&_h2]:text-base [&_h2]:text-foreground [&_h3]:text-sm [&_h3]:text-foreground [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_code]:text-cyan-600 dark:[&_code]:text-cyan-400 [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded">
-            <ReactMarkdown>{value}</ReactMarkdown>
+          <div className="prose prose-sm dark:prose-invert max-w-none text-foreground text-xs leading-relaxed [&_h1]:text-lg [&_h1]:text-foreground [&_h2]:text-base [&_h2]:text-foreground [&_h3]:text-sm [&_h3]:text-foreground [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_code]:text-cyan-600 dark:[&_code]:text-cyan-400 [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded [&_th]:text-left">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw, rehypeTransformCustomTags]}
+            >
+              {preprocessMarkdown(value)}
+            </ReactMarkdown>
           </div>
         </div>
       ) : (

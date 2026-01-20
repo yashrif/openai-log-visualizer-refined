@@ -1,0 +1,73 @@
+
+/* ========================================
+   CUSTOM PROMPT TAGS STYLING
+   ======================================== */
+/* ========================================
+   CUSTOM PROMPT TAGS STYLING
+   ======================================== */
+.prompt-tag {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem; /* text-xs */
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 0.5rem; /* rounded-lg */
+  border-left-width: 4px;
+  background-color: var(--muted);
+  position: relative;
+
+  /* Default styling for unknown tags */
+  border-left-color: var(--muted-foreground);
+  background-color: var(--sidebar-accent);
+}
+
+.prompt-tag::before {
+  content: attr(data-tag);
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+/* Specific styling for system tags */
+.prompt-tag[data-tag="system"] {
+  border-left-color: var(--cyber-secondary);
+  background-color: rgba(224, 0, 255, 0.05); /* very light purple */
+}
+
+.prompt-tag[data-tag="system"]::before {
+  color: var(--cyber-secondary);
+}
+
+/* Specific styling for identity tags */
+.prompt-tag[data-tag="identity"] {
+  border-left-color: var(--cyber-primary);
+  background-color: rgba(0, 235, 211, 0.05); /* very light cyan */
+}
+
+.prompt-tag[data-tag="identity"]::before {
+  color: var(--cyber-primary);
+}
+
+/* Specific styling for tool_visibility tags */
+.prompt-tag[data-tag="tool_visibility"] {
+  border-left-color: #f97316; /* orange */
+  background-color: rgba(249, 115, 22, 0.05);
+}
+
+.prompt-tag[data-tag="tool_visibility"]::before {
+  color: #f97316;
+}
+
+/* Specific styling for guardrails tags */
+.prompt-tag[data-tag="guardrails"] {
+  border-left-color: #ef4444; /* red */
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.prompt-tag[data-tag="guardrails"]::before {
+  color: #ef4444;
+}
