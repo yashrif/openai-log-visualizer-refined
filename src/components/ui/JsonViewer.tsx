@@ -13,6 +13,7 @@ interface JsonViewerProps {
   maxHeight?: string;
   showCopyButton?: boolean;
   indentWidth?: number;
+  className?: string;
 }
 
 // Keys that typically contain markdown content
@@ -181,6 +182,7 @@ const JsonViewer: React.FC<JsonViewerProps> = ({
   maxHeight = '400px',
   showCopyButton = true,
   indentWidth = 10,
+  className = '',
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -195,7 +197,7 @@ const JsonViewer: React.FC<JsonViewerProps> = ({
   };
 
   return (
-    <div className="relative group">
+    <div className={`relative group ${className}`}>
       {showCopyButton && (
         <button
           onClick={handleCopy}

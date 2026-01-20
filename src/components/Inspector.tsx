@@ -22,6 +22,11 @@ import { formatTimestamp } from '@/lib/log-parser';
 import { EVENT_DISPLAY_NAMES, EVENT_CATEGORY_STYLES } from '@/lib/constants';
 import JsonViewer from '@/components/ui/JsonViewer';
 import EventBadge from '@/components/ui/EventBadge';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 interface InspectorProps {
   selectedEvent: ParsedEvent | null;
@@ -111,7 +116,7 @@ const Inspector: React.FC<InspectorProps> = ({
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden px-6 py-6 space-y-6">
         {/* Event Header */}
         <div className="flex items-center justify-between">
           <EventBadge
@@ -126,44 +131,53 @@ const Inspector: React.FC<InspectorProps> = ({
 
         {/* Tab Content */}
         {activeTab === 'payload' && (
-          <div className="space-y-6">
+          <div className="flex-1 flex flex-col min-h-0 space-y-6">
             {/* Event Info */}
-            <div className="p-5 rounded-[20px] border border-border bg-muted/30 space-y-4">
-              <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
-                Event Info
-              </h3>
-              <div className="grid grid-cols-2 gap-y-3 text-xs">
-                <div className="text-muted-foreground flex items-center gap-2">
-                  <Tag className="size-3" />
-                  Source
-                </div>
-                <div className={`text-right font-bold ${
-                  selectedEvent.source === 'OPENAI' ? 'text-primary' : 'text-secondary'
-                }`}>
-                  {selectedEvent.source}
-                </div>
-
-                <div className="text-muted-foreground flex items-center gap-2">
-                  <Layers className="size-3" />
-                  Event Type
-                </div>
-                <div className="text-foreground text-right font-mono text-[10px] break-all">
-                  {selectedEvent.eventType}
-                </div>
-
-                <div className="text-muted-foreground flex items-center gap-2">
-                  <Clock className="size-3" />
-                  Timestamp
-                </div>
-                <div className="text-foreground text-right font-mono text-[10px]">
-                  {formatTimestamp(selectedEvent.timestamp)}
-                </div>
+            <Collapsible defaultOpen className="flex-shrink-0 p-5 rounded-[20px] border border-border bg-muted/30 group/collaps">
+              <div className="flex items-center justify-between mb-0">
+                <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
+                  Event Info
+                </h3>
+                <CollapsibleTrigger asChild>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors p-1">
+                    <ChevronDown className="size-4 transition-transform duration-200 group-data-[state=open]/collaps:rotate-180" />
+                  </button>
+                </CollapsibleTrigger>
               </div>
-            </div>
+              <CollapsibleContent>
+                <div className="grid grid-cols-2 gap-y-3 text-xs pt-4">
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <Tag className="size-3" />
+                    Source
+                  </div>
+                  <div className={`text-right font-bold ${
+                    selectedEvent.source === 'OPENAI' ? 'text-primary' : 'text-secondary'
+                  }`}>
+                    {selectedEvent.source}
+                  </div>
+
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <Layers className="size-3" />
+                    Event Type
+                  </div>
+                  <div className="text-foreground text-right font-mono text-[10px] break-all">
+                    {selectedEvent.eventType}
+                  </div>
+
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <Clock className="size-3" />
+                    Timestamp
+                  </div>
+                  <div className="text-foreground text-right font-mono text-[10px]">
+                    {formatTimestamp(selectedEvent.timestamp)}
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Payload Content */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="flex-1 flex flex-col min-h-0 space-y-3 pb-4">
+              <div className="flex-shrink-0 flex items-center justify-between">
                 <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
                   Payload
                 </h3>
@@ -178,13 +192,14 @@ const Inspector: React.FC<InspectorProps> = ({
               <JsonViewer
                 data={selectedEvent.payload}
                 initialExpanded={true}
-                maxHeight="300px"
+                maxHeight="100%"
+                className="flex-1 h-full"
               />
             </div>
 
             {/* Delta Content (if present) */}
             {selectedEvent.delta && (
-              <div className="p-5 rounded-[20px] border border-yellow-500/20 bg-yellow-500/10 dark:bg-yellow-500/5 space-y-3">
+              <div className="flex-shrink-0 p-5 rounded-[20px] border border-yellow-500/20 bg-yellow-500/10 dark:bg-yellow-500/5 space-y-3">
                 <h3 className="text-yellow-600 dark:text-yellow-500 uppercase text-[10px] tracking-widest font-sans font-bold">
                   Delta Content
                 </h3>
@@ -197,7 +212,7 @@ const Inspector: React.FC<InspectorProps> = ({
         )}
 
         {activeTab === 'headers' && (
-          <div className="space-y-6">
+          <div className="h-full overflow-y-auto space-y-6 pr-2">
             {/* Identifiers */}
             <div className="p-5 rounded-[20px] border border-border bg-muted/30 space-y-4">
               <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
@@ -308,7 +323,7 @@ const Inspector: React.FC<InspectorProps> = ({
         )}
 
         {activeTab === 'analysis' && (
-          <div className="space-y-6">
+          <div className="h-full overflow-y-auto space-y-6 pr-2">
             {/* Event Sequence */}
             {relatedEvents.length > 0 && (
               <div className="space-y-4">
@@ -340,11 +355,11 @@ const Inspector: React.FC<InspectorProps> = ({
                             }}
                             className="text-muted-foreground hover:text-foreground transition-colors p-1"
                           >
-                           {isExpanded ? (
-                             <ChevronDown className="size-3" />
-                           ) : (
-                             <ChevronRight className="size-3" />
-                           )}
+                            {isExpanded ? (
+                              <ChevronDown className="size-3" />
+                            ) : (
+                              <ChevronRight className="size-3" />
+                            )}
                           </button>
 
                           <span className="text-[10px] text-muted-foreground w-6">{index + 1}.</span>
@@ -420,7 +435,7 @@ const Inspector: React.FC<InspectorProps> = ({
         )}
 
         {activeTab === 'raw' && (
-          <div className="space-y-4">
+          <div className="h-full overflow-y-auto space-y-4 pr-2">
             <div className="flex items-center justify-between">
               <h3 className="text-muted-foreground uppercase text-[10px] tracking-widest font-sans font-bold">
                 Raw Log Line
