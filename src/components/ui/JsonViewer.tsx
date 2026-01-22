@@ -2,6 +2,13 @@
 
 import React, { useState } from 'react';
 import { Copy, Check, ChevronDown, ChevronRight, FileText, Maximize2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -243,17 +250,43 @@ const JsonViewer: React.FC<JsonViewerProps> = ({
   return (
     <div className={`relative group ${className}`}>
       {showCopyButton && (
-        <button
-          onClick={handleCopy}
-          className="absolute top-3 right-3 p-1.5 rounded-lg bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all opacity-0 group-hover:opacity-100 z-10"
-          title="Copy JSON"
-        >
-          {copied ? (
-            <Check className="size-4 text-green-600 dark:text-green-400" />
-          ) : (
-            <Copy className="size-4" />
-          )}
-        </button>
+        <div className="absolute top-3 right-3 flex gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+           <Dialog>
+            <DialogTrigger asChild>
+              <button
+                className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+                title="Full Screen"
+              >
+                <Maximize2 className="size-4" />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[75vw] h-[90vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Payload Viewer</DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-auto p-4 bg-card rounded-md font-mono text-xs border">
+                <JsonNode
+                  data={data}
+                  initialExpanded={true}
+                  depth={0}
+                  indentWidth={indentWidth}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <button
+            onClick={handleCopy}
+            className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+            title="Copy JSON"
+          >
+            {copied ? (
+              <Check className="size-4 text-green-600 dark:text-green-400" />
+            ) : (
+              <Copy className="size-4" />
+            )}
+          </button>
+        </div>
       )}
       <div
         className="bg-card dark:bg-black/60 p-4 rounded-2xl border border-border overflow-auto font-mono text-xs shadow-inner"
