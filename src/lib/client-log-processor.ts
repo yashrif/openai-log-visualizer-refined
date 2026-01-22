@@ -2,6 +2,7 @@ import {
   parseLogFile,
   buildConversationItems,
   getUniqueSessions,
+  getSessionStartTimes,
   filterBySession,
   extractSessionData,
   toParsedEvent,
@@ -20,6 +21,7 @@ export interface ProcessedLogResult {
   conversationItems: ConversationItem[];
   rawEvents: ParsedEvent[];
   totalEvents: number;
+  sessionStartTimes: Record<string, string>;
 }
 
 // Helper function to process log content
@@ -29,6 +31,7 @@ export function processLogContent(content: string, sessionId?: string | null): P
 
   // Get unique sessions
   const sessions = getUniqueSessions(rawLines);
+  const sessionStartTimes = getSessionStartTimes(rawLines);
 
   // Filter by session if specified
   if (sessionId) {
@@ -49,5 +52,6 @@ export function processLogContent(content: string, sessionId?: string | null): P
     conversationItems,
     rawEvents: parsedEvents,
     totalEvents: rawLines.length,
+    sessionStartTimes,
   };
 }

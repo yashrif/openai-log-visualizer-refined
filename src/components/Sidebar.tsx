@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId, onSessionS
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-3">
-        {sessions.map((session) => {
+        {sessions.map((session, index) => {
           const isActive = session.id === activeSessionId;
           const isError = session.status === 'error';
 
@@ -46,7 +46,9 @@ const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId, onSessionS
                 ) : isError ? (
                    <AlertCircle className="size-[22px] text-muted-foreground group-hover:text-foreground" />
                 ) : (
-                   <CheckCircle className="size-[22px] text-muted-foreground group-hover:text-foreground" />
+                   <span className="flex items-center justify-center size-[22px] rounded-full border border-muted-foreground/30 text-[10px] font-mono font-medium text-muted-foreground group-hover:text-foreground group-hover:border-foreground/50 transition-colors">
+                     {sessions.length - index}
+                   </span>
                 )}
               </div>
 

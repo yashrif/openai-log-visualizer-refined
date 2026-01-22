@@ -724,6 +724,17 @@ export function getUniqueSessions(rawLines: RawLogLine[]): string[] {
   return Array.from(sessions);
 }
 
+// ==================== GET SESSION START TIMES ====================
+export function getSessionStartTimes(rawLines: RawLogLine[]): Record<string, string> {
+  const startTimes: Record<string, string> = {};
+  for (const line of rawLines) {
+    if (!startTimes[line.sessionId]) {
+      startTimes[line.sessionId] = line.timestamp;
+    }
+  }
+  return startTimes;
+}
+
 // ==================== FILTER BY SESSION ====================
 export function filterBySession(rawLines: RawLogLine[], sessionId: string): RawLogLine[] {
   return rawLines.filter(line => line.sessionId === sessionId);

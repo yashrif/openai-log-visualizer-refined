@@ -53,13 +53,31 @@ export default function Home() {
     if (data.sessions && data.sessions.length > 0) {
       // Reverse sessions to show Newest -> Oldest
       const reversedSessions = [...data.sessions].reverse();
-      const logSessions: Session[] = reversedSessions.map((id, index) => ({
-        id,
-        name: id.length > 20 ? `${id.substring(0, 8)}...${id.substring(id.length - 4)}` : id,
-        status: index === 0 ? 'active' : 'completed',
-        dateStr: index === 0 ? 'Current' : 'Previous',
-        eventCount: data.rawEvents?.filter(e => e.sessionId === id).length,
-      }));
+      const logSessions: Session[] = reversedSessions.map((id, index) => {
+        // Format date string
+        const startTime = data.sessionStartTimes?.[id];
+        let dateStr = 'Unknown Date';
+
+        if (startTime) {
+           // Create a nice date string (Month Day, Time)
+           const date = new Date(startTime);
+           dateStr = date.toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+           });
+        }
+
+        return {
+          id,
+          name: id.length > 20 ? `${id.substring(0, 8)}...${id.substring(id.length - 4)}` : id,
+          status: index === 0 ? 'active' : 'completed',
+          dateStr: dateStr,
+          eventCount: data.rawEvents?.filter(e => e.sessionId === id).length,
+        };
+      });
       setSessions(logSessions);
 
       if (data.currentSession) {
