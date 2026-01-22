@@ -44,7 +44,7 @@ export function processLogContent(content: string, sessionId?: string | null): P
 
   return {
     sessions,
-    currentSession: sessionId || sessions[0] || null,
+    currentSession: sessionId || sessions[sessions.length - 1] || null,
     sessionData,
     conversationItems,
     rawEvents: parsedEvents,

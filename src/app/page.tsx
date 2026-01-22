@@ -51,7 +51,9 @@ export default function Home() {
   const processApiResponse = useCallback((data: LogApiResponse, fileName?: string) => {
     // Update sessions from log file
     if (data.sessions && data.sessions.length > 0) {
-      const logSessions: Session[] = data.sessions.map((id, index) => ({
+      // Reverse sessions to show Newest -> Oldest
+      const reversedSessions = [...data.sessions].reverse();
+      const logSessions: Session[] = reversedSessions.map((id, index) => ({
         id,
         name: id.length > 20 ? `${id.substring(0, 8)}...${id.substring(id.length - 4)}` : id,
         status: index === 0 ? 'active' : 'completed',
