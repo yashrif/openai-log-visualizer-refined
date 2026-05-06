@@ -160,24 +160,23 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
     };
   }, [audioData, decodeAudioData]);
 
-  // Update progress during playback
-  const updateProgress = useCallback(() => {
-    if (!audioContextRef.current || !isPlaying) return;
-
-    const elapsed = audioContextRef.current.currentTime - startTimeRef.current;
-    const newProgress = Math.min(elapsed / duration, 1);
-    setProgress(newProgress);
-
-    if (newProgress < 1) {
-      animationRef.current = requestAnimationFrame(updateProgress);
-    } else {
-      setIsPlaying(false);
-      setProgress(0);
-    }
-  }, [duration, isPlaying]);
-
   // Start progress animation when playing
   useEffect(() => {
+    const updateProgress = () => {
+      if (!audioContextRef.current || !isPlaying) return;
+
+      const elapsed = audioContextRef.current.currentTime - startTimeRef.current;
+      const newProgress = Math.min(elapsed / duration, 1);
+      setProgress(newProgress);
+
+      if (newProgress < 1) {
+        animationRef.current = requestAnimationFrame(updateProgress);
+      } else {
+        setIsPlaying(false);
+        setProgress(0);
+      }
+    };
+
     if (isPlaying) {
       animationRef.current = requestAnimationFrame(updateProgress);
     }
@@ -186,7 +185,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioData, chunkCount, classN
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isPlaying, updateProgress]);
+  }, [duration, isPlaying]);
 
   const handlePlay = async () => {
     if (!audioBufferRef.current || !audioContextRef.current) return;

@@ -138,8 +138,6 @@ export default function Home() {
     setIsLoading(true);
 
     // Re-filter the current data for the selected session
-    const filteredEvents = rawEvents.filter(e => e.sessionId === sessionId);
-
     // We need to rebuild conversation items for this session
     // Filter from ALL items, not the currently displayed ones
     const filteredItems = allConversationItems.filter(item =>
@@ -176,8 +174,11 @@ export default function Home() {
     }
 
     // Fallback for response groups (legacy logic or loose events)
-    if (selectedEvent?.responseId) {
-      return rawEvents.filter(e => e.responseId === selectedEvent.responseId);
+    const relatedResponseKey = selectedEvent?.responseId || selectedEvent?.requestId;
+    if (relatedResponseKey) {
+      return rawEvents.filter(e =>
+        e.responseId === relatedResponseKey || e.requestId === relatedResponseKey
+      );
     }
 
     // Default to just the selected event if no sequence found
@@ -217,20 +218,26 @@ export default function Home() {
     const responses = new Map<string, { created?: number; firstDelta?: number }>();
 
     activeEvents.forEach(e => {
-      if (!e.responseId) return;
+      const responseKey = e.responseId || e.requestId;
+      if (!responseKey) return;
 
       const ts = new Date(e.timestamp).getTime();
 
-      if (e.eventType === 'response.created') {
-        const current = responses.get(e.responseId) || {};
-        responses.set(e.responseId, { ...current, created: ts });
+      if (e.eventType === 'response.created' || e.eventType === 'response_created') {
+        const current = responses.get(responseKey) || {};
+        responses.set(responseKey, { ...current, created: ts });
       } else if (
-        (e.eventType === 'response.text.delta' || e.eventType === 'response.audio.delta') &&
-        !responses.get(e.responseId)?.firstDelta
+        (
+          e.eventType === 'response.text.delta' ||
+          e.eventType === 'response_text_delta' ||
+          e.eventType === 'response.audio.delta' ||
+          e.eventType === 'audio_delta'
+        ) &&
+        !responses.get(responseKey)?.firstDelta
       ) {
         // Only capture the FIRST delta for a response
-        const current = responses.get(e.responseId) || {};
-        responses.set(e.responseId, { ...current, firstDelta: ts });
+        const current = responses.get(responseKey) || {};
+        responses.set(responseKey, { ...current, firstDelta: ts });
       }
     });
 

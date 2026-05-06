@@ -8,7 +8,6 @@ import {
   toParsedEvent,
 } from './log-parser';
 import {
-  Session,
   ParsedEvent,
   SessionData,
   ConversationItem

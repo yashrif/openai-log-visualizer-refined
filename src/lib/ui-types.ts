@@ -33,13 +33,23 @@ export type ClientEventType =
   | 'audio_append'
   | 'audio_commit'
   | 'audio_clear'
+  | 'input_audio_buffer.append'
+  | 'input_audio_buffer.commit'
+  | 'input_audio_buffer.clear'
   | 'conversation_item_truncate'
+  | 'conversation.item.truncate'
   | 'response_cancel'
+  | 'response.cancel'
   | 'conversation_input_text'
+  | 'conversation.input.text'
   | 'conversation_item_create'
+  | 'conversation.item.create'
   | 'conversation_item_delete'
+  | 'conversation.item.delete'
   | 'response_create'
+  | 'response.create'
   | 'session_update'
+  | 'session.update'
   | 'unknown';
 
 // ==================== OPENAI EVENT TYPES (dot.notation) ====================
@@ -47,47 +57,81 @@ export type OpenAIEventType =
   // Session
   | 'session.created'
   | 'session.updated'
+  | 'session_created'
+  | 'session_updated'
   // Audio Output
   | 'response.audio.delta'
   | 'response.audio.done'
+  | 'audio_delta'
+  | 'audio_done'
   // User Transcript
   | 'conversation.item.input_audio_transcription.delta'
   | 'conversation.item.input_audio_transcription.completed'
+  | 'transcript_delta'
+  | 'transcript_completed'
   // Response Lifecycle
   | 'response.created'
   | 'response.done'
+  | 'response_created'
+  | 'response_done'
   | 'response.output_item.added'
   | 'response.output_item.done'
+  | 'response_output_item_added'
+  | 'response_output_item_done'
   | 'response.content_part.added'
   | 'response.content_part.done'
+  | 'response_content_part_added'
+  | 'response_content_part_done'
   // Text Output
   | 'response.text.delta'
   | 'response.text.done'
+  | 'response_text_delta'
+  | 'response_text_done'
   // Audio Transcript
   | 'response.audio_transcript.delta'
   | 'response.audio_transcript.done'
+  | 'response_audio_transcript_delta'
+  | 'response_audio_transcript_done'
   // Function Call
   | 'response.function_call_arguments.delta'
   | 'response.function_call_arguments.done'
+  | 'function_call_args_delta'
+  | 'function_call_args_done'
   // Conversation
   | 'conversation.created'
   | 'conversation.item.created'
   | 'conversation.item.deleted'
   | 'conversation.item.truncated'
+  | 'conversation_created'
+  | 'conversation_item_created'
+  | 'conversation_item_deleted'
+  | 'conversation_item_truncated'
   // Input Audio Buffer
   | 'input_audio_buffer.committed'
   | 'input_audio_buffer.cleared'
   | 'input_audio_buffer.speech_started'
   | 'input_audio_buffer.speech_stopped'
+  | 'input_audio_buffer_committed'
+  | 'input_audio_buffer_cleared'
+  | 'input_audio_buffer_speech_started'
+  | 'input_audio_buffer_speech_stopped'
   // Error & Rate Limits
   | 'error'
   | 'rate_limits.updated'
+  | 'rate_limits_updated'
   // Custom Backend
   | 'realtime.data'
+  | 'realtime_data'
   | 'data.confirmation.required'
+  | 'data_confirmation_required'
   | 'generation.started'
+  | 'generation_started'
+  | 'generation.completed'
+  | 'generation_completed'
   | 'permission.denied'
+  | 'permission_denied'
   | 'agent.switch.required'
+  | 'agent_switch_required'
   | 'unknown';
 
 export type RealtimeEventType = ClientEventType | OpenAIEventType;
@@ -121,6 +165,7 @@ export interface ParsedEvent extends RawLogLine {
   // Common OpenAI fields
   eventId?: string;
   responseId?: string;
+  requestId?: string;
   itemId?: string;
   callId?: string;
   outputIndex?: number;

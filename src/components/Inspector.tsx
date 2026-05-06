@@ -19,7 +19,7 @@ import {
   SessionData,
 } from '@/lib/ui-types';
 import { formatTimestamp } from '@/lib/log-parser';
-import { EVENT_DISPLAY_NAMES, EVENT_CATEGORY_STYLES } from '@/lib/constants';
+import { EVENT_DISPLAY_NAMES } from '@/lib/constants';
 import JsonViewer from '@/components/ui/JsonViewer';
 import EventBadge from '@/components/ui/EventBadge';
 import {
@@ -41,7 +41,6 @@ type TabType = 'payload' | 'headers' | 'analysis' | 'raw';
 const Inspector: React.FC<InspectorProps> = ({
   selectedEvent,
   relatedEvents,
-  conversationItem,
   sessionData,
   onEventSelect,
 }) => {
@@ -239,6 +238,18 @@ const Inspector: React.FC<InspectorProps> = ({
                     </span>
                     <span className="text-primary font-mono text-[10px] text-right max-w-[200px] break-all">
                       {selectedEvent.responseId}
+                    </span>
+                  </div>
+                )}
+
+                {selectedEvent.requestId && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <Hash className="size-3" />
+                      Request ID
+                    </span>
+                    <span className="text-primary font-mono text-[10px] text-right max-w-[200px] break-all">
+                      {selectedEvent.requestId}
                     </span>
                   </div>
                 )}

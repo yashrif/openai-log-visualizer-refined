@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Search, AudioLines, AlertCircle, CheckCircle } from 'lucide-react';
+import { Search, AudioLines, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Session } from '@/lib/ui-types';
 

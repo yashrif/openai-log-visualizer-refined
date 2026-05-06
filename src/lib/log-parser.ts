@@ -18,70 +18,259 @@ const EVENT_CATEGORY_MAP: Record<string, EventCategory> = {
   // Session events
   'session.created': 'session',
   'session.updated': 'session',
+  'session_created': 'session',
+  'session_updated': 'session',
+  'session.update': 'session',
   'session_update': 'session',
 
   // User input events
   'conversation_input_text': 'user_input',
+  'conversation.input.text': 'user_input',
   'audio_append': 'user_input',
+  'input_audio_buffer.append': 'user_input',
   'audio_commit': 'user_input',
+  'input_audio_buffer.commit': 'user_input',
   'audio_clear': 'user_input',
+  'input_audio_buffer.clear': 'user_input',
   'conversation_item_create': 'user_input',
+  'conversation.item.create': 'user_input',
   'conversation_item_delete': 'user_input',
+  'conversation.item.delete': 'user_input',
   'conversation_item_truncate': 'user_input',
+  'conversation.item.truncate': 'user_input',
   'response_create': 'user_input',
+  'response.create': 'user_input',
   'response_cancel': 'user_input',
+  'response.cancel': 'user_input',
 
   // Response lifecycle
   'response.created': 'response',
+  'response_created': 'response',
   'response.done': 'response',
+  'response_done': 'response',
   'response.output_item.added': 'response',
+  'response_output_item_added': 'response',
   'response.output_item.done': 'response',
+  'response_output_item_done': 'response',
   'response.content_part.added': 'response',
+  'response_content_part_added': 'response',
   'response.content_part.done': 'response',
+  'response_content_part_done': 'response',
 
   // Text output
   'response.text.delta': 'response',
+  'response_text_delta': 'response',
   'response.text.done': 'response',
+  'response_text_done': 'response',
 
   // Function call events
   'response.function_call_arguments.delta': 'function_call',
+  'function_call_args_delta': 'function_call',
   'response.function_call_arguments.done': 'function_call',
+  'function_call_args_done': 'function_call',
 
   // Audio events
   'response.audio.delta': 'audio',
   'response.audio.done': 'audio',
+  'audio_delta': 'audio',
+  'audio_done': 'audio',
   'response.audio_transcript.delta': 'audio',
   'response.audio_transcript.done': 'audio',
+  'response_audio_transcript_delta': 'audio',
+  'response_audio_transcript_done': 'audio',
 
   // Transcript events
   'conversation.item.input_audio_transcription.delta': 'transcript',
+  'transcript_delta': 'transcript',
   'conversation.item.input_audio_transcription.completed': 'transcript',
+  'transcript_completed': 'transcript',
 
   // Conversation events
   'conversation.created': 'system',
+  'conversation_created': 'system',
   'conversation.item.created': 'system',
+  'conversation_item_created': 'system',
   'conversation.item.deleted': 'system',
+  'conversation_item_deleted': 'system',
   'conversation.item.truncated': 'system',
+  'conversation_item_truncated': 'system',
 
   // Input audio buffer events
   'input_audio_buffer.committed': 'system',
+  'input_audio_buffer_committed': 'system',
   'input_audio_buffer.cleared': 'system',
+  'input_audio_buffer_cleared': 'system',
   'input_audio_buffer.speech_started': 'system',
   'input_audio_buffer.speech_stopped': 'system',
+  'input_audio_buffer_speech_started': 'system',
+  'input_audio_buffer_speech_stopped': 'system',
 
   // Error events
   'error': 'error',
 
   // Rate limits
   'rate_limits.updated': 'system',
+  'rate_limits_updated': 'system',
 
   // Custom backend events
   'realtime.data': 'system',
+  'realtime_data': 'system',
   'data.confirmation.required': 'system',
+  'data_confirmation_required': 'system',
   'generation.started': 'system',
+  'generation_started': 'system',
+  'generation.completed': 'system',
+  'generation_completed': 'system',
   'permission.denied': 'error',
+  'permission_denied': 'error',
   'agent.switch.required': 'system',
+  'agent_switch_required': 'system',
 };
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+}
+
+function getString(record: Record<string, unknown> | undefined, key: string): string | undefined {
+  const value = record?.[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getNestedString(
+  record: Record<string, unknown> | undefined,
+  parentKey: string,
+  key: string
+): string | undefined {
+  return getString(asRecord(record?.[parentKey]), key);
+}
+
+function getAudioPayload(event: ParsedEvent): string | undefined {
+  return (
+    getString(event.payload, 'delta') ||
+    getString(event.payload, 'audio') ||
+    getNestedString(event.payload, 'data', 'audio') ||
+    getNestedString(event.payload, 'payload', 'audio')
+  );
+}
+
+function getTranscriptPayload(event: ParsedEvent): string | undefined {
+  return (
+    getString(event.payload, 'transcript') ||
+    getString(event.payload, 'delta') ||
+    getNestedString(event.payload, 'data', 'transcript') ||
+    getNestedString(event.payload, 'data', 'delta') ||
+    getNestedString(event.payload, 'payload', 'transcript') ||
+    getNestedString(event.payload, 'payload', 'delta')
+  );
+}
+
+function getTextPayload(event: ParsedEvent): string | undefined {
+  return (
+    getString(event.payload, 'text') ||
+    getString(event.payload, 'delta') ||
+    getNestedString(event.payload, 'data', 'text') ||
+    getNestedString(event.payload, 'data', 'delta') ||
+    getNestedString(event.payload, 'payload', 'text') ||
+    getNestedString(event.payload, 'payload', 'delta')
+  );
+}
+
+function getFunctionArgumentsPayload(event: ParsedEvent): string | undefined {
+  return (
+    getString(event.payload, 'arguments') ||
+    getString(event.payload, 'delta') ||
+    getNestedString(event.payload, 'data', 'arguments') ||
+    getNestedString(event.payload, 'data', 'delta') ||
+    getNestedString(event.payload, 'payload', 'arguments') ||
+    getNestedString(event.payload, 'payload', 'delta')
+  );
+}
+
+function getFunctionNamePayload(event: ParsedEvent): string | undefined {
+  return (
+    getString(event.payload, 'name') ||
+    getNestedString(event.payload, 'data', 'name') ||
+    getNestedString(event.payload, 'payload', 'name')
+  );
+}
+
+function isAudioDeltaEvent(eventType: string): boolean {
+  return (
+    eventType === 'response.audio.delta' ||
+    eventType === 'audio_delta'
+  );
+}
+
+function isAudioDoneEvent(eventType: string): boolean {
+  return (
+    eventType === 'response.audio.done' ||
+    eventType === 'audio_done'
+  );
+}
+
+function isAudioTranscriptDeltaEvent(eventType: string): boolean {
+  return (
+    eventType === 'response.audio_transcript.delta' ||
+    eventType === 'response_audio_transcript_delta'
+  );
+}
+
+function isAudioTranscriptDoneEvent(eventType: string): boolean {
+  return (
+    eventType === 'response.audio_transcript.done' ||
+    eventType === 'response_audio_transcript_done'
+  );
+}
+
+function isTextDeltaEvent(eventType: string): boolean {
+  return eventType === 'response.text.delta' || eventType === 'response_text_delta';
+}
+
+function isTextDoneEvent(eventType: string): boolean {
+  return eventType === 'response.text.done' || eventType === 'response_text_done';
+}
+
+function isFunctionCallDeltaEvent(eventType: string): boolean {
+  return (
+    eventType === 'response.function_call_arguments.delta' ||
+    eventType === 'function_call_args_delta'
+  );
+}
+
+function isFunctionCallDoneEvent(eventType: string): boolean {
+  return (
+    eventType === 'response.function_call_arguments.done' ||
+    eventType === 'function_call_args_done'
+  );
+}
+
+function isResponseDoneEvent(eventType: string): boolean {
+  return eventType === 'response.done' || eventType === 'response_done';
+}
+
+function isSessionEvent(eventType: string): boolean {
+  return (
+    eventType === 'session.created' ||
+    eventType === 'session.updated' ||
+    eventType === 'session_created' ||
+    eventType === 'session_updated'
+  );
+}
+
+function isUserAudioAppendEvent(eventType: string): boolean {
+  return eventType === 'audio_append' || eventType === 'input_audio_buffer.append';
+}
+
+function isUserAudioCommitEvent(eventType: string): boolean {
+  return eventType === 'audio_commit' || eventType === 'input_audio_buffer.commit';
+}
+
+function isUserTextInputEvent(eventType: string): boolean {
+  return eventType === 'conversation_input_text' || eventType === 'conversation.input.text';
+}
 
 // ==================== PARSE SINGLE LOG LINE ====================
 export function parseLogLine(line: string, index: number): RawLogLine | null {
@@ -142,6 +331,7 @@ export function toParsedEvent(rawLine: RawLogLine): ParsedEvent {
     category: getEventCategory(rawLine.eventType),
     eventId: payload.event_id as string | undefined,
     responseId: payload.response_id as string | undefined,
+    requestId: payload.request_id as string | undefined,
     itemId: payload.item_id as string | undefined,
     callId: payload.call_id as string | undefined,
     outputIndex: payload.output_index as number | undefined,
@@ -155,14 +345,28 @@ export function groupEventsByResponseId(events: ParsedEvent[]): Map<string, Pars
   const groups = new Map<string, ParsedEvent[]>();
 
   for (const event of events) {
-    if (event.responseId) {
-      const existing = groups.get(event.responseId) || [];
+    const groupId = getResponseGroupId(event);
+    if (groupId) {
+      const existing = groups.get(groupId) || [];
       existing.push(event);
-      groups.set(event.responseId, existing);
+      groups.set(groupId, existing);
     }
   }
 
   return groups;
+}
+
+function getResponseGroupId(event: ParsedEvent): string | undefined {
+  if (event.responseId) return event.responseId;
+  if (
+    event.requestId &&
+    (event.category === 'response' ||
+      event.category === 'audio' ||
+      event.category === 'function_call')
+  ) {
+    return event.requestId;
+  }
+  return undefined;
 }
 
 // ==================== AGGREGATE FUNCTION CALL DELTAS ====================
@@ -175,21 +379,23 @@ export function aggregateFunctionCallDeltas(events: ParsedEvent[]): {
   let name: string | undefined;
 
   for (const event of events) {
-    if (event.eventType === 'response.function_call_arguments.delta' && event.delta) {
-      deltas.push(event.delta);
+    if (isFunctionCallDeltaEvent(event.eventType)) {
+      const delta = getFunctionArgumentsPayload(event);
+      if (delta) deltas.push(delta);
     }
-    if (event.eventType === 'response.function_call_arguments.done') {
-      name = event.payload.name as string;
+    if (isFunctionCallDoneEvent(event.eventType)) {
+      name = getFunctionNamePayload(event);
       // If done event has full arguments, use that
-      if (event.payload.arguments) {
+      const argumentsPayload = getFunctionArgumentsPayload(event);
+      if (argumentsPayload) {
         try {
           return {
             name,
-            arguments: JSON.parse(event.payload.arguments as string),
-            argumentsRaw: event.payload.arguments as string,
+            arguments: JSON.parse(argumentsPayload),
+            argumentsRaw: argumentsPayload,
           };
         } catch {
-          return { name, argumentsRaw: event.payload.arguments as string };
+          return { name, argumentsRaw: argumentsPayload };
         }
       }
     }
@@ -213,12 +419,13 @@ export function aggregateAudioTranscriptDeltas(events: ParsedEvent[]): string {
   const deltas: string[] = [];
 
   for (const event of events) {
-    if (event.eventType === 'response.audio_transcript.delta' && event.delta) {
-      deltas.push(event.delta);
+    if (isAudioTranscriptDeltaEvent(event.eventType)) {
+      const transcript = getTranscriptPayload(event);
+      if (transcript) deltas.push(transcript);
     }
-    if (event.eventType === 'response.audio_transcript.done') {
+    if (isAudioTranscriptDoneEvent(event.eventType)) {
       // If done event has full transcript, prefer that
-      const transcript = event.payload.transcript as string;
+      const transcript = getTranscriptPayload(event);
       if (transcript) return transcript;
     }
   }
@@ -231,11 +438,12 @@ export function aggregateTextDeltas(events: ParsedEvent[]): string {
   const deltas: string[] = [];
 
   for (const event of events) {
-    if (event.eventType === 'response.text.delta' && event.delta) {
-      deltas.push(event.delta);
+    if (isTextDeltaEvent(event.eventType)) {
+      const text = getTextPayload(event);
+      if (text) deltas.push(text);
     }
-    if (event.eventType === 'response.text.done') {
-      const text = event.payload.text as string;
+    if (isTextDoneEvent(event.eventType)) {
+      const text = getTextPayload(event);
       if (text) return text;
     }
   }
@@ -245,32 +453,36 @@ export function aggregateTextDeltas(events: ParsedEvent[]): string {
 
 // ==================== HELPER: MERGE BASE64 CHUNKS ====================
 // Helper function to properly merge base64 audio chunks
-// When multiple base64 chunks are concatenated, padding (=) from intermediate
-// chunks must be removed, and proper padding added only at the end
+// Each chunk is its own base64-encoded PCM byte range, so merge decoded bytes
+// instead of concatenating encoded strings across arbitrary byte boundaries.
 function mergeBase64Chunks(chunks: string[]): string {
   if (chunks.length === 0) return '';
-  if (chunks.length === 1) return chunks[0];
 
-  // Normalize chunks: trim, remove data URL prefix, whitespace, url-safe chars, and padding
-  const normalizedChunks = chunks
-    .map(chunk => chunk.trim())
-    .map(chunk => (chunk.includes(',') ? (chunk.split(',').pop() || '') : chunk))
-    .map(chunk => chunk.replace(/\s/g, ''))
-    .map(chunk => chunk.replace(/-/g, '+').replace(/_/g, '/'))
-    .map(chunk => chunk.replace(/=+$/, ''))
-    .filter(chunk => chunk.length > 0);
+  const decodedChunks: string[] = [];
 
-  if (normalizedChunks.length === 0) return '';
+  for (const chunk of chunks) {
+    let normalized = chunk.trim();
+    normalized = normalized.includes(',') ? (normalized.split(',').pop() || '') : normalized;
+    normalized = normalized.replace(/\s/g, '').replace(/^"+|"+$/g, '');
+    normalized = normalized.replace(/-/g, '+').replace(/_/g, '/');
 
-  // Join all chunks
-  const joined = normalizedChunks.join('');
+    if (!normalized) continue;
 
-  // Length mod 4 == 1 is invalid and cannot be fixed with padding
-  if (joined.length % 4 === 1) return '';
+    if (normalized.length % 4 === 1) return '';
 
-  // Add proper padding (base64 must be divisible by 4)
-  const paddingNeeded = (4 - (joined.length % 4)) % 4;
-  return joined + '='.repeat(paddingNeeded);
+    const paddingNeeded = (4 - (normalized.length % 4)) % 4;
+    normalized += '='.repeat(paddingNeeded);
+
+    try {
+      decodedChunks.push(atob(normalized));
+    } catch {
+      return '';
+    }
+  }
+
+  if (decodedChunks.length === 0) return '';
+
+  return btoa(decodedChunks.join(''));
 }
 
 // ==================== AGGREGATE AUDIO DELTAS ====================
@@ -282,18 +494,18 @@ export function aggregateAudioDeltas(events: ParsedEvent[]): {
   let chunkCount = 0;
 
   for (const event of events) {
-    if (event.eventType === 'response.audio.delta') {
+    if (isAudioDeltaEvent(event.eventType)) {
       chunkCount++;
-      const delta = event.payload.delta as string;
+      const delta = getAudioPayload(event);
       if (delta) {
         audioChunks.push(delta);
       }
     }
-    if (event.eventType === 'response.audio.done') {
+    if (isAudioDoneEvent(event.eventType)) {
       // If done event has full audio, prefer that
-      const audio = event.payload.audio as string;
+      const audio = getAudioPayload(event);
       if (audio) {
-        return { audioData: audio, chunkCount };
+        return { audioData: mergeBase64Chunks([audio]), chunkCount };
       }
     }
   }
@@ -309,7 +521,7 @@ export function aggregateAudioDeltas(events: ParsedEvent[]): {
 // ==================== EXTRACT TOKEN USAGE ====================
 export function extractTokenUsage(events: ParsedEvent[]): TokenUsage | undefined {
   for (const event of events) {
-    if (event.eventType === 'response.done') {
+    if (isResponseDoneEvent(event.eventType)) {
       const response = event.payload.response as Record<string, unknown> | undefined;
       const usage = response?.usage as Record<string, unknown> | undefined;
 
@@ -346,13 +558,13 @@ export function createResponseGroup(responseId: string, events: ParsedEvent[]): 
 
   // Determine response type
   const hasFunctionCall = sortedEvents.some(
-    e => e.eventType.includes('function_call')
+    e => e.category === 'function_call'
   );
   const hasAudio = sortedEvents.some(
-    e => e.eventType.includes('audio')
+    e => e.category === 'audio'
   );
   const hasText = sortedEvents.some(
-    e => e.eventType.includes('text')
+    e => isTextDeltaEvent(e.eventType) || isTextDoneEvent(e.eventType)
   );
 
   let type: ResponseGroup['type'] = 'mixed';
@@ -361,7 +573,7 @@ export function createResponseGroup(responseId: string, events: ParsedEvent[]): 
   else if (hasText && !hasFunctionCall && !hasAudio) type = 'text_response';
 
   // Determine status
-  const doneEvent = sortedEvents.find(e => e.eventType === 'response.done');
+  const doneEvent = sortedEvents.find(e => isResponseDoneEvent(e.eventType));
   const status: ResponseGroup['status'] = doneEvent ? 'completed' : 'in_progress';
 
   // Aggregate data
@@ -392,7 +604,7 @@ export function createResponseGroup(responseId: string, events: ParsedEvent[]): 
 export function extractSessionData(events: ParsedEvent[]): SessionData | undefined {
   // Find the last session.updated or session.created event
   const sessionEvents = events.filter(
-    e => e.eventType === 'session.created' || e.eventType === 'session.updated'
+    e => isSessionEvent(e.eventType)
   );
 
   if (sessionEvents.length === 0) return undefined;
@@ -416,7 +628,9 @@ export function extractSessionData(events: ParsedEvent[]): SessionData | undefin
     })),
     modalities: session.modalities as string[],
     turnDetection: session.turn_detection as Record<string, unknown>,
-    createdAt: lastEvent.eventType === 'session.created' ? lastEvent.timestamp : undefined,
+    createdAt: lastEvent.eventType === 'session.created' || lastEvent.eventType === 'session_created'
+      ? lastEvent.timestamp
+      : undefined,
     updatedAt: lastEvent.timestamp,
   };
 }
@@ -432,12 +646,11 @@ export function aggregateUserAudioEvents(events: ParsedEvent[]): {
   let startTimestamp = '';
 
   for (const event of events) {
-    if (event.eventType === 'audio_append') {
+    if (isUserAudioAppendEvent(event.eventType)) {
       eventIds.push(event.id);
       if (!startTimestamp) startTimestamp = event.timestamp;
 
-      const payload = event.payload.payload as Record<string, unknown> | undefined;
-      const audioData = (payload?.audio || event.payload.audio) as string | undefined;
+      const audioData = getNestedString(event.payload, 'payload', 'audio') || getString(event.payload, 'audio');
       if (audioData) {
         audioChunks.push(audioData);
       }
@@ -483,7 +696,7 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
   for (const event of parsedEvents) {
     if (processedEventIds.has(event.id)) continue;
 
-    if (event.eventType === 'audio_append') {
+    if (isUserAudioAppendEvent(event.eventType)) {
       currentAudioGroup.push(event);
     } else {
       if (currentAudioGroup.length > 0) {
@@ -519,7 +732,7 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
     if (processedEventIds.has(event.id)) continue;
 
     // Session events
-    if (event.eventType === 'session.created' || event.eventType === 'session.updated') {
+    if (isSessionEvent(event.eventType)) {
       const session = event.payload.session as Record<string, unknown> | undefined;
       const tools = session?.tools as Array<Record<string, unknown>> | undefined;
 
@@ -536,7 +749,9 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
             description: t.description as string,
           })),
           modalities: session?.modalities as string[],
-          eventType: event.eventType === 'session.created' ? 'created' : 'updated',
+          eventType: event.eventType === 'session.created' || event.eventType === 'session_created'
+            ? 'created'
+            : 'updated',
         },
         events: [event],
       });
@@ -545,19 +760,18 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
 
     // User input events
     if (event.source === 'USER') {
-      if (event.eventType === 'conversation_input_text') {
-        const payload = event.payload.payload as Record<string, unknown> | undefined;
+      if (isUserTextInputEvent(event.eventType)) {
         items.push({
           id: `user_${event.id}`,
           type: 'user_input',
           timestamp: event.timestamp,
           userInput: {
             inputType: 'text',
-            text: payload?.text as string,
+            text: getNestedString(event.payload, 'payload', 'text') || getString(event.payload, 'text'),
           },
           events: [event],
         });
-      } else if (event.eventType === 'audio_commit') {
+      } else if (isUserAudioCommitEvent(event.eventType)) {
         // audio_append events are pre-grouped, audio_commit is a separate signal
         items.push({
           id: `system_${event.id}`,
@@ -586,7 +800,7 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
     }
 
     // Error events
-    if (event.eventType === 'error' || event.eventType === 'permission.denied') {
+    if (event.eventType === 'error' || event.eventType === 'permission.denied' || event.eventType === 'permission_denied') {
       const errorPayload = event.payload.error as Record<string, unknown> | undefined;
       items.push({
         id: `error_${event.id}`,
@@ -594,8 +808,8 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
         timestamp: event.timestamp,
         error: {
           message: (errorPayload?.message || event.payload.message || 'Unknown error') as string,
-          code: errorPayload?.code as string,
-          type: errorPayload?.type as string,
+          code: (errorPayload?.code || event.payload.code) as string,
+          type: (errorPayload?.type || event.payload.type) as string,
         },
         events: [event],
       });
@@ -603,7 +817,7 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
     }
 
     // Conversation item created (often contains user message)
-    if (event.eventType === 'conversation.item.created') {
+    if (event.eventType === 'conversation.item.created' || event.eventType === 'conversation_item_created') {
       const item = event.payload.item as Record<string, unknown> | undefined;
       if (item?.role === 'user') {
         const content = item.content as Array<Record<string, unknown>> | undefined;
@@ -667,17 +881,29 @@ export function buildConversationItems(rawLines: RawLogLine[]): ConversationItem
 function getEventDescription(eventType: string): string {
   const descriptions: Record<string, string> = {
     'conversation.created': 'Conversation initialized',
+    'conversation_created': 'Conversation initialized',
     'conversation.item.created': 'Conversation item added',
+    'conversation_item_created': 'Conversation item added',
     'conversation.item.deleted': 'Conversation item removed',
+    'conversation_item_deleted': 'Conversation item removed',
     'conversation.item.truncated': 'Conversation item truncated',
+    'conversation_item_truncated': 'Conversation item truncated',
     'input_audio_buffer.committed': 'Audio buffer committed',
+    'input_audio_buffer_committed': 'Audio buffer committed',
     'input_audio_buffer.cleared': 'Audio buffer cleared',
+    'input_audio_buffer_cleared': 'Audio buffer cleared',
     'input_audio_buffer.speech_started': 'Speech detected',
     'input_audio_buffer.speech_stopped': 'Speech ended',
     'rate_limits.updated': 'Rate limits updated',
+    'rate_limits_updated': 'Rate limits updated',
     'realtime.data': 'Realtime data received',
+    'realtime_data': 'Realtime data received',
     'generation.started': 'Generation started',
+    'generation_started': 'Generation started',
+    'generation.completed': 'Generation completed',
+    'generation_completed': 'Generation completed',
     'agent.switch.required': 'Agent switch requested',
+    'agent_switch_required': 'Agent switch requested',
   };
 
   return descriptions[eventType] || eventType;

@@ -80,53 +80,121 @@ export const EVENT_DISPLAY_NAMES: Record<string, string> = {
   // Session
   'session.created': 'Session Created',
   'session.updated': 'Session Updated',
+  'session_created': 'Session Created',
+  'session_updated': 'Session Updated',
+  'session.update': 'Session Update',
   'session_update': 'Session Update',
 
   // User input
   'conversation_input_text': 'Text Input',
+  'conversation.input.text': 'Text Input',
   'audio_append': 'Audio Chunk',
+  'input_audio_buffer.append': 'Audio Chunk',
   'audio_commit': 'Audio Committed',
+  'input_audio_buffer.commit': 'Audio Committed',
   'audio_clear': 'Audio Cleared',
+  'input_audio_buffer.clear': 'Audio Cleared',
+  'conversation_item_truncate': 'Item Truncate',
+  'conversation.item.truncate': 'Item Truncate',
+  'response_cancel': 'Response Cancel',
+  'response.cancel': 'Response Cancel',
+  'conversation_item_create': 'Item Create',
+  'conversation.item.create': 'Item Create',
+  'conversation_item_delete': 'Item Delete',
+  'conversation.item.delete': 'Item Delete',
+  'response_create': 'Response Create',
+  'response.create': 'Response Create',
 
   // Response lifecycle
   'response.created': 'Response Started',
+  'response_created': 'Response Started',
   'response.done': 'Response Complete',
+  'response_done': 'Response Complete',
   'response.output_item.added': 'Output Added',
+  'response_output_item_added': 'Output Added',
   'response.output_item.done': 'Output Complete',
+  'response_output_item_done': 'Output Complete',
+  'response.content_part.added': 'Content Added',
+  'response_content_part_added': 'Content Added',
+  'response.content_part.done': 'Content Complete',
+  'response_content_part_done': 'Content Complete',
 
   // Function calls
   'response.function_call_arguments.delta': 'Function Args (streaming)',
+  'function_call_args_delta': 'Function Args (streaming)',
   'response.function_call_arguments.done': 'Function Call Complete',
+  'function_call_args_done': 'Function Call Complete',
 
   // Audio
   'response.audio.delta': 'Audio Chunk',
   'response.audio.done': 'Audio Complete',
+  'audio_delta': 'Audio Chunk',
+  'audio_done': 'Audio Complete',
   'response.audio_transcript.delta': 'Transcript (streaming)',
   'response.audio_transcript.done': 'Transcript Complete',
+  'response_audio_transcript_delta': 'Transcript (streaming)',
+  'response_audio_transcript_done': 'Transcript Complete',
+  'conversation.item.input_audio_transcription.delta': 'User Transcript (streaming)',
+  'transcript_delta': 'User Transcript (streaming)',
+  'conversation.item.input_audio_transcription.completed': 'User Transcript Complete',
+  'transcript_completed': 'User Transcript Complete',
 
   // Text
   'response.text.delta': 'Text (streaming)',
+  'response_text_delta': 'Text (streaming)',
   'response.text.done': 'Text Complete',
+  'response_text_done': 'Text Complete',
 
   // Conversation
   'conversation.created': 'Conversation Created',
+  'conversation_created': 'Conversation Created',
   'conversation.item.created': 'Item Created',
+  'conversation_item_created': 'Item Created',
+  'conversation.item.deleted': 'Item Deleted',
+  'conversation_item_deleted': 'Item Deleted',
+  'conversation.item.truncated': 'Item Truncated',
+  'conversation_item_truncated': 'Item Truncated',
 
   // Input buffer
+  'input_audio_buffer.committed': 'Audio Buffer Committed',
+  'input_audio_buffer_committed': 'Audio Buffer Committed',
+  'input_audio_buffer.cleared': 'Audio Buffer Cleared',
+  'input_audio_buffer_cleared': 'Audio Buffer Cleared',
   'input_audio_buffer.speech_started': 'Speech Started',
   'input_audio_buffer.speech_stopped': 'Speech Stopped',
+  'input_audio_buffer_speech_started': 'Speech Started',
+  'input_audio_buffer_speech_stopped': 'Speech Stopped',
 
   // Errors
   'error': 'Error',
   'permission.denied': 'Permission Denied',
+  'permission_denied': 'Permission Denied',
+
+  // System
+  'rate_limits.updated': 'Rate Limits Updated',
+  'rate_limits_updated': 'Rate Limits Updated',
+  'realtime.data': 'Realtime Data',
+  'realtime_data': 'Realtime Data',
+  'data.confirmation.required': 'Confirmation Required',
+  'data_confirmation_required': 'Confirmation Required',
+  'generation.started': 'Generation Started',
+  'generation_started': 'Generation Started',
+  'generation.completed': 'Generation Completed',
+  'generation_completed': 'Generation Completed',
+  'agent.switch.required': 'Agent Switch Required',
+  'agent_switch_required': 'Agent Switch Required',
 };
 
 // ==================== STREAMABLE EVENTS ====================
 export const STREAMABLE_EVENTS = [
   'response.function_call_arguments.delta',
+  'function_call_args_delta',
   'response.audio_transcript.delta',
   'response.audio.delta',
+  'response_audio_transcript_delta',
+  'audio_delta',
   'response.text.delta',
+  'response_text_delta',
 ];
 
 // ==================== DEMO/MOCK DATA (for fallback) ====================

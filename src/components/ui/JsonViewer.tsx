@@ -12,7 +12,6 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { visit } from 'unist-util-visit';
 
 interface JsonViewerProps {
   data: unknown;
@@ -219,7 +218,6 @@ const transformChildren = (node: any) => {
 };
 
 // Rehype plugin to transform custom marker paragraphs into stylized divs
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rehypeTransformCustomTags = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (tree: any) => {
